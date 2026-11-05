@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">CATALOGO DE LIBROS</h1>
+
+    <!-- formulario de busqueda -->
+     <form action="{% url 'catalogo' %}" method="get" class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-8 items-end">
+    <div class="md:col-span-6">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+        <input type="text" name="q" value="{{ query }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Buscar por título o palabra clave...">
+    </div>
+
+    <div class="md:col-span-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+        <select name="categoria" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+            <option value="">Todas las Categorías</option>
+            {% for cat in categorias %}
+                <option value="{{cat.id}}" {% if cat.id|stringformat:"i" == categoria_id %}selected{% endif %}>
+                    {{cat.nombre}}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="md:col-span-2">
+        <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow transition-colors">
+            BUSCAR
+        </button>
+    </div>
+</form>
+
+     <!-- HERRAMIENTAS POR ROL -->
+
+     <!-- bibiotecario -->
+     {% if user.tipo.usuario == 'BIBLIOTECARIO' %}
+        <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4 shadow-sm">
+            <span>
+                <strong>Panel de Bibliotecario</strong>
+                Tienes acceso para registrar nuevas obras
+            </span>
+            <a
+            href="/admin/catalogo/libro/add/"
+            class="btn btn-dark btn-sm"
+            target="_blank">Agregar Nuevo Libro
+            </a>
+        </div>
+     {% endif %}
+
+    <!-- PROFESOR -->
+    {% if user.tipo_usuario == 'PROFESOR' %}
+        <div class="alert alert-warning d-flex justify-content-between align-items-center mb-4 shadow-sm">
+            <span>
+                <strong>Herramienta de docente</strong>
+                No encuentras un titulo necesario para clase
+            </span>
+            <button class="btn btn-info btn-sm text-white">
+                Sugerir libro
+            </button>
+        </div>
+    {% endif %}
+
+    <!-- GRID -->
+   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {% for libro in libros %}
+        <div class=" rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col sm:flex-row justify-between hover:shadow-lg transition-shadow">
+
+            <!-- FOTO IZQUIERDA -->
+             <div class="sm:w-1/3 flex-shrink-0 bg-gray-100 flex items-center justify-center"> 
+                {% if libro.portada %}
+                    <img src="{{ libro.portada.url }}" alt="{{ libro.titulo }}" class="w-full h-48 sm:h-full object-cover"> 
+                {% else %} 
+                    <div class="w-full h-48 sm:h-full min-h-[160px] bg-gray-200 flex flex-col items-center justify-center text-gray-500 font-medium text-sm p-4 text-center"> 
+                        <span class="text-2xl mb-1">📖</span> 
+                        <span>Sin Portada</span> 
+                    </div> 
+                {% endif %} 
+            </div>
+
+            <!-- TEXTO DERECHA -->
+             <div class="sm:w-2/3 p-5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="inline-block px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full">
+                            {{libro.categoria.nombre}}
+                        </span>
+                    </div>
+
+                    <h3 class="text-lgfont-bold text-gray-900 mb-2 leading-tight">{{ libro.titulo }}</h3>
+
+                    <div class="space-y-1 text-sm text-gray-600">
+                        <p>
+                            <strong>EDITORIAL</strong>
+                            {{libro.editorial.nombre}}
+                        </p>
+                        <p>
+                            <strong>SISBN :</strong>
+                            <span class="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded text-gray-800">
+                                {{libro.isbn}}
+                            </span>
+                        </p>
+                        <p>
+                            <strong>EDICION : </strong>
+                            {% if libro.edicion %}
+                            {{ libro.edicion }}
+                            {% else %}1ª Edición{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- BOTON SEGUN ROL -->
+                 <div class="mt-4 pt-3 border-t border-gray-100">
+                    {% if user.tipo_usuario == 'ESTUDIANTE' or user.tipo_usuario == 'PROFESOR' %}
+                        <button class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm"">
+                            SOLICITAR PRESTAMO
+                        </button>
+                    {% endif %}
+
+                    {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+                        <a 
+                        href="/admin/catalogo/libro/{{ libro.id }}/change/"
+                        class="block w-full text-center py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg text-sm transition-colors shadow-sm" 
+                        target="_blank">
+                            Editar libro
+                        </a>
+                    {% endif %}
+                 </div>
+             </div>
+        </div>
+    {% empty %}
+        <div class="col-span-full l text-center py-12 text-gray-500 bg-white rounded-xl border border-gray-100 shadow-sm">
+            No hay libros registrados o ninguno coincide con la búsqueda.
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

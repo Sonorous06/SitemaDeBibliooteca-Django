@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-950 text-gray-100 py-10 px-4 sm:px-6 lg:px-8">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8">
+
+        <!-- encabezado formulario -->
+         <div class="mb-6 pb-4 border-b border-gray-800">
+             <h3 class="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                Sugerir adquisicion de libro
+             </h3>
+             <p class="text-gray-400 text-sm mt-1">
+                Completa los datos del material academico que necesitas para tu clase
+             </p>
+         </div>
+
+         <!-- Formulario -->
+          <form method="post" class="space-y-5">
+
+            {% csrf_token %}
+
+            <!-- titulo libro -->
+             <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">
+                    Título del libro <span class="text-rose-400">*</span>
+                </label>
+                <input type="text" name="titulo" required
+                        class="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm transition-all"
+                        placeholder="Ej. Patrones de diseño">
+             </div>
+
+            <!-- autores -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">
+                    Autor(es) <span class="text-rose-400">*</span>
+                </label>
+                <input type="text" name="autores" required
+                        class="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm transition-all"
+                        placeholder="Ej. Erich Gamma">
+              </div>
+
+            <!-- ISBN -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">
+                    ISBN <span class="text-gray-500 text-xs font-normal">
+                        (opcional)
+                    </span>
+                </label>
+                <input type="text" name="isbn"
+                        class="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm transition-all font-mono"
+                        placeholder="Ej. 9780201633610">
+              </div>
+
+              <!-- Justificacion academica -->
+               <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">
+                    Justificación académica <span class="text-rose-400">*</span>
+                </label>
+                <textarea name="justificacion" rows="4" required
+                        class="w-full px-4 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm transition-all"
+                        placeholder="¿Para qué asignatura o proyecto de clase se requiere este material?">
+                </textarea>
+               </div>
+
+               <!-- botones de accion -->
+                <div class="flex items-center justify-end gap-3 pt-5 border-t border-gray-800">
+                    <a href="{% url 'catalogo' %}"
+                        class="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-semibold rounded-xl text-sm border border-gray-700 transition-all">
+                        Cancelar
+                    </a>
+                    <button type="submit"
+                        class="px-5 py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-sm shadow-lg transition-all flex items-center gap-2">
+                        <span>Enviar sugerencias</span>
+                    </button>
+                </div>
+          </form>
+    </div>
+</div>
+
+{% endblock %}

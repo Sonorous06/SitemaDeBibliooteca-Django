@@ -1,0 +1,55 @@
+{% extends 'base.html'%}
+
+{% block title %} Iniciar Sesion {% endblock %}
+
+{% block content%}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200 mt-10">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">Iniciar Sesion</h2>
+        <p class="text-sm text-gray-600 mt-1">Ingresa datos</p>
+    </div>
+
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-sm">
+                Usuario incorrecto, intente de nnew
+            </div>
+        {% endif %}
+
+        <div>
+            <label 
+            for="id_username"
+            class="block text-sm font-medium text-gray-700">Nombre de usuario
+            </label>
+            <input 
+            type="text" 
+            name="username" 
+            id="id_username" 
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+        </div>
+         <label 
+            for="id_password"
+            class="block text-sm font-medium text-gray-700">Clave de usuario
+            </label>
+            <input 
+            type="password" 
+            name="password" 
+            id="id_password" 
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            >
+        <div>
+
+            <button type="submit"
+                class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold shadow transition">
+                Entrar al sistema
+            </button>
+        </div>
+    </form>
+
+</div>
+{% endblock%}
+

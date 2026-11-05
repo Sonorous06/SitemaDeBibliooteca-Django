@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-950 text-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+
+        <!-- ENCABEZADO -->
+         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 sm:p-8 text-center shadow-2xl relative overflow-hidden">
+
+            <!-- FONDO DESTELLO -->
+             <div class="absolute \-top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+             <h1 class="text-8xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+                Que quieres leer hoy?
+             </h1>
+             <p class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight m-5">
+                Explora los títulos disponibles la biblioteca escolar.
+             </p>
+
+             <!-- FORMULARIO DE BUSQUEDA -->
+              <form action="{% url 'catalogo' %}" method="get" class="max-w-3xl mx-auto space-y-4">
+                <div class="flex flex-col sm:flex-row gap-3">
+
+                    <!-- Campo de busqueda -->
+                     <div class="relative flex-1">
+                        <input 
+                        type="text"
+                        name="q"
+                        value="{{query}}" 
+                        class="w-full pl-10 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all text-sm"
+                        placeholder="Busca por título, autor o palabra clave...">
+                     </div>
+
+                     <!-- Selector de categoria -->
+                      <div class="sm:w-56">
+                        <select name="categoria" class="w-full px-4 py-3 bg-gray-950 border border-gray-800 rounded-xl text-gray-300 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-sm">
+                            <option value="">Todas las categorias</option>
+                            {% for cat in categorias %}
+                                <option value="{{ cat.id }} {% if cat.id|stringformat:"i" == categoria_id %}selected{% endif %}">
+                                    {{ cat.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                      </div>
+
+                      <!-- Btn busrca -->
+                       <button type="submit" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                        <span>BUSCAR</span>
+                       </button>
+                </div>
+              </form>
+         </div>
+
+        <!-- HERRAMINETAS POR ROL -->
+
+        <!-- bibliotecario -->
+        {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+            <div class="bg-gray-900 border border-amber-500/30 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div>
+                        <h3 class="text-amber-400 font-semibold text-sm">
+                            Panel de bibliotecario
+                        </h3>
+                        <p class="text-gray-400 text-xs">
+                            Tienes acceso para administrar obras y revisar sugerencias docentes
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="/admin/catalogo/libro/add/" target="_blank" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 font-semibold text-xs rounded-lg transition-all shadow">
+                        Agregar nuevo libro
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Profesor -->
+         {% if user.tipo_usuario == 'PROFESOR' %}
+            <div class="bg-gray-900 border border-sky-500/30 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
+                <div class="flex items-center gap-3">
+                    <div>
+                        <h3 class="text-sky-400 font-semibold text-sm">
+                            Herramienta Docente
+                        </h3>
+                        <p class="text-gray-400 text-xs">
+                            ¿No encuentras un título necesario para tu asignatura?
+                        </p>
+                    </div>
+                </div>
+                <a href="{% url 'sugerir_adquisicion' %}" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-lg transition-all shadow">
+                    Sugerir libro
+                </a>
+            </div>
+         {% endif %}
+
+         <!-- GRID DE LIBROS -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for libro in libros %}
+                <div class="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-1 group">
+                    <div>
+                        <!-- img -->
+                         <div class="relative h-48 bg-gray-950 border-b border-gray-800/80 flex items-center justify-center overflow-hidden">
+                            {% if libro.portada %}
+                                <img 
+                                    src="{{ libro.portada.url }}" 
+                                    alt="{{ libro.titulo }}"
+                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            {% else %}
+                                <div class="flex flex-col items-center justify-center text-gray-600">
+                                    <div class="w-16 h-20 bg-gray-900 border border-gray-800 rounded-lg flex items-center justify-center shadow-inner mb-2">
+                                        <span class="text-3xl">📘</span>
+                                    </div>
+                                    <span class="text-xs font-medium text-gray-500">
+                                        Sin portada
+                                    </span>
+                                </div>
+                            {% endif %}
+
+                            <!-- Badge categoria -->
+                             <span class="absolute top-3 left-3 px-2.5 py-1 bg-gray-950/80 backdrop-blur-md border border-gray-800 text-sky-400 text-xs font-semibold rounded-full">
+                                {{libro.categoria.nombre}}
+                             </span>
+
+                         </div>
+
+                         <!-- Infor del libro -->
+                          <div class="p-5 space-y-3">
+
+                            <h3 class="text-lg font-bold text-white group-hover:text-sky-400 transition-colors line-clamp-2 leading-tigh">
+                                {{ libro.titulo }}
+                            </h3>
+
+                            <div class="space-y-1.5 text-xs text-gray-400">
+                                <p class="flex justify-between">
+                                    <span class="text-gray-500 font-medium">
+                                        Editorial:
+                                    </span>
+                                    <span class="text-gray-300 font-semibold">
+                                        {{ libro.editorial.nombre }}
+                                    </span>
+                                </p>
+                                <p class="flex justify-between">
+                                     <span class="text-gray-500 font-medium">
+                                        ISBN:
+                                    </span>
+                                    <span class="text-gray-300 font-mono bg-gray-950 px-1.5 py-0.5 rounded border border-gray-800">
+                                        {{ libro.isbn }}
+                                    </span>
+                                </p>
+                                <p class="flex justify-between">
+                                    <span class="text-gray-500 font-medium">
+                                        Edicion :
+                                    </span>
+                                    <span class="text-gray-300">
+                                        {% if libro.edicion %}
+                                            {{ libro.edicion }}
+                                        {% else %}
+                                            1ª Edición
+                                        {% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                          </div>
+                    </div>
+
+                    <!-- btn de accion -->
+                     <div class="p-5 pt-0 border-t border-gray-800/50 mt-4">
+                        {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+                            <a href="/admin/catalogo/libro/{{ libro.id }}/change/" target="_blank" class="block w-full text-center py-2 px-4 bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold rounded-xl text-xs transition-colors shadow">
+                                Editar Libro
+                            </a>
+                        {% else %}
+                            <button class="w-full py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition-colors shadow-lg flex items-center justify-center gap-2">
+                                <span>SOLICITAR PRESTAMO</span>
+                            </button>
+                        {% endif %}
+                     </div>
+
+                </div>
+            {% empty %}
+            <!-- Sin resultados -->
+             <div class="col-span-full py-16 bg-gray-900 border border-gray-800 rounded-2xl text-center">
+                <div class="max-w-md mx-auto space-y-3">
+                    <h3 class="text-lg font-bold text-white">
+                        No se encontraron libros
+                    </h3>
+                    <p class="text-gray-500 text-xs">
+                        No hay libros registrados o ninguno coincide con tu filtro de búsqueda   
+                    </p>
+                    <a href="{% url 'catalogo' %}" class="inline-block mt-2 text-xs font-semibold text-sky-400 hover:underline">
+                        Limpiar filtros
+                    </a>
+                </div>
+             </div>
+            {% endfor %}
+          </div>
+
+    </div>
+</div>
+{% endblock %}

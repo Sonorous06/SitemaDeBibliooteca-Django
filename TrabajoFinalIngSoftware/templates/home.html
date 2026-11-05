@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - Biblioteca Escolar{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-8 text-center border border-gray-200">
+    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">
+        Bienvenido {{user.first_name|default:user.username}}!
+    </h1>
+    <p class="text-gray-600 text-lg mb-6">
+        Rol <span class="font-gray-600 text-indigo-600">
+            {{user.get_tipo_usuario_display}}
+        </span>
+    </p>
+
+    <!-- Accso rapido -->
+     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+
+        <!-- MODULO 1 ACA VA EL CATALOGO / LIBROS -->
+        <div class="p-6 bg-indigo-50 rounded-lg border border-indigo-100 hover:shadow-md transition">
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg mb-1">Catalogo de libros</h3>
+                <p class="text-sm text-gray-600 mb-4">Explora los libros disponibles para préstamos.</p>
+            </div>
+            <!--ACA BOTON-->
+            <a href="{% url 'catalogo' %}"
+            class="mt-4 inline-block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow text-sm transition text-center">
+            Ver catalogo
+            </a>
+        </div>
+
+        <!-- MODULO 2 ACA VA EL DE PRESTAMOS -->
+        <div class="p-6 bg-green-50 rounded-lg border border-green-100 hover:shadow-lg transition flex flex-col justify-between">
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg mb-1">PRESTAMOS ACTIVOS</h3>
+                <p class="text-sm text-gray-600 mb-4">Consulta tus fechas de devolución y solicitudes en curso.</p>
+            </div>
+            <!--ACA BOTON-->
+            <a href="{% url 'prestamos' %}"
+            class="mt-4 inline-block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow text-sm transition text-center">
+            MIS PRESTAMOS
+            </a>
+        </div>
+
+        <!-- MODULO 3 ACA VA EL DE MULTAS Y SANCIONES -->
+         <div class="p-6 bg-green-50 rounded-lg border border-green-100 hover:shadow-lg transition flex flex-col justify-between">
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg mb-1">MULTAS Y SANCIONES</h3>
+                <p class="text-sm text-gray-600 mb-4">Revisa tu historial de adeudos y estado de cuenta.</p>
+            </div>
+            <!--ACA BOTON-->
+            <a href="{% url 'historial' %}"
+            class="mt-4 inline-block w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow text-sm transition text-center">
+            VER SANCIONES
+            </a>
+        </div>
+
+     </div>
+</div>
+
+{% endblock %}

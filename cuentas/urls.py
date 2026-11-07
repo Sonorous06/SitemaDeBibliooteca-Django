@@ -1,8 +1,11 @@
-from django.urls import path
-from django.contrib.auth import views as auth_views 
-from .views import home_view, prestamos_view, historial_view
+# config/urls.py 
+from django.contrib import admin 
+from django.urls import path, include 
+from django.contrib.auth import views as auth_views
 
 #vistas importadas
+from .views import home_view, prestamos_view, historial_view
+from cuentas.views import lista_usuarios_view, alternar_bloqueo_usuario_view
 from catalogo.views import ( 
     catalogo_view, 
     sugerir_adquisicion_view, 
@@ -11,12 +14,14 @@ from catalogo.views import (
 )
 
 urlpatterns = [
-       # Página de bienvenida 
+        path('admin/', admin.site.urls),
+        # Página de bienvenida 
         path('', home_view, name='home'), 
            
         #Autenticacion
         path('login/', auth_views.LoginView.as_view(template_name='cuentas/login.html'), name='login'),         
         path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+        path('cuentas/', include('django.contrib.auth.urls')),
             
         #rutas catalogo
         path('catalogo/', catalogo_view, name='catalogo'),         

@@ -54,6 +54,38 @@ class Usuario(AbstractUser):
     
     def __str__(self):
         return f"{self.username} ({self.get_tipo_usuario_display()})"
+
+    # METODOS DE VALIDACIION DE REGLAS DE NEGOCIO
+    def tiene_multas_pendientes(self):
+        """RN-08 True si el usuario tiene multas con estado PENDIENTE."""
+        return self.multas.filter(estado='PENDIENTE').exists()
+
+    def tiene_prestamos_vencidos(self):
+        """RN-08 True si el usuario tiene préstamos en estado VENCIDO."""
+        return self.prestamos.filter(estado='VENCIDO').exists()
+    
+    def total_prestamos_activos(self):
+        """Cuenta préstamos vigentes (SOLICITADO o ACTIVO)."""
+        return self.prestamos.filter(estado_in=['SOLICITADO','ACTIVO']).count()
+    
+    def puede_solicitar_prestamos(self):
+        """ Evalúa elegibilidad (RN-08, RN-01, RN-02, Bloqueo). Retorna (Bool, Mensaje) """
+        if self.bloqueado:
+            return False, f"Cuenta suspendida: {self.motivo_bloqueo or 'Consulte en biblioteca.'}"
+        
+        if self.tiene_multas_pendientes():
+            return False, "Tiene multas pendientes de pago"
+        
+        if self.tiene_prestamos_vencidos():
+            return False, "Tienes prestamos vencidos sin entregar"
+        
+        from prestamos.models import PoliticaPrestamo
+        politica = PoliticaPrestamo.objects.filter(tipo_usuario=self.tipo_usuario).first()
+        
+        if politica and self.total_prestamos_activos() >= politica.max_libros:
+            return False, f"Has alcanzado el límite máximo de {politica.max_libros} libros permitidos."
+        
+        return True, "Elegible para el prestamos"
     
 #catalogo de carreras(estudiantes)
 class Carrera(models.Model):
@@ -98,7 +130,7 @@ class Departamento(models.Model):
     def __str__(self): 
         return self.nombre
 
-#perfilde profesor (relacion 1 a 1 con usurio)
+#perfil de profesor (relacion 1 a 1 con usurio)
 class Profesor(models.Model):
     usuario = models.OneToOneField(
         Usuario,

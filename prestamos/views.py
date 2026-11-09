@@ -11,7 +11,7 @@ from multas.models import Multa
 
 # solicitar prestamo en linea -- cu-06 / cu-23 / rn-01 / rn_08
 @login_required
-def solicitar_prestamos_view(request, libro_id):
+def solicitar_prestamo_view(request, libro_id):
     """Permite al usuario solicitar un libro disponible desde el catálogo."""
     libro = get_object_or_404(Libro, pk=libro_id)
     

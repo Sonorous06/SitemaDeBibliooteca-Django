@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="mb-8">
+    <span class="text-xs font-semibold uppercase tracking-wider text-sky-400">
+        Mi historial
+    </span>
+    <h1 class="text-3xl font-bold text-white mt-1">Mis prestamos</h1>
+    <p class="text-gray-400 text-sm mt-1">
+        Consulta el estado de tus solicitudes, libros activos y fechas de vencimiento
+    </p>
+</div>
+
+<div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+    <div class="overflow-x-auto">
+
+        <table class="w-full text-left text-sm text-gray-300">
+            <thead class="bg-gray-800/60 text-xs text-gray-400 uppercase tracking-wider border-b border-gray-800">
+                <tr>
+                    <th class="px-6 py-4 font-semibold">Libro</th>
+                    <th class="px-6 py-4 font-semibold">Ejemplar</th>
+                    <th class="px-6 py-4 font-semibold">Fecha Solicitud</th>
+                    <th class="px-6 py-4 font-semibold">Vencimiento</th>
+                    <th class="px-6 py-4 font-semibold text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-800">
+                {% for prestamo in prestamos %}
+                    <tr class="hover:bg-gray-800/30 transition-colors">
+                        <td class="px-6 py-4 font-medium text-white max-w-xs truncate">
+                            {{ prestamo.ejemplar.libro.titulo }}
+                        </td>
+                        <td class="px-6 py-4 font-mono text-xs text-gray-400">
+                            {{ prestamo.ejemplar.codigo_inventario }}
+                        </td>
+                        <td class="px-6 py-6 text-xs">
+                            {{ prestamo.fecha_solicitud|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-6 py-4 text-xs font-semibold">
+                            {% if prestamo.fecha_vencimiento %} 
+                                {{ prestamo.fecha_vencimiento|date:"d/m/Y" }} 
+                            {% else %}
+                                <span class="text-gray-500">
+                                    Pendiente de recoleccion
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if prestamo.estado == 'SOLICITADO' %}
+                                <span class="px-2 5 py-1 bg-sky-500/10 text-sky-400 rounded-full text-xs font-semibold">
+                                    Por recoger (hasta {{ prestamo.fecha_limite_recoger|date:"d/m H:i" }})
+                                </span>  
+                            {% elif prestamo.estado == 'ACTIVO' %}
+                                <span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">
+                                    En prestamo
+                                </span>
+                            {% elif prestamo.estado == 'VENCIDO' %}
+                                <span class="px-2 5 py-1 bg-rose-500/10 text-rose-400 rounded-full text-xs font-semibold">
+                                    Vencido
+                                </span>
+                            {% elif prestamo.estado == 'DEVUELTO' %}
+                                <span class="px-2 5 py-1 bg-gray-800 text-gray-400 rounded-full text-xs font-semibold">
+                                    Devuelto
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-500 text-sm">
+                            Aún no has realizado ninguna solicitud de préstamo
+                            <a 
+                                href="{% url 'catalogo' %}"
+                                class="text-sky-400 hover:underline font-semibold ml-1">
+                                    Explorar catolog
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

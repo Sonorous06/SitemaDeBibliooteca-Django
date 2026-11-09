@@ -3,15 +3,15 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    
-    #panel de administracion django
+    # Panel de administración Django
     path("admin/", admin.site.urls),
     
-    #modulo de cuentas y auth
+    # Módulo de cuentas y autenticación
     path('', include('cuentas.urls')),
     
-    #ruta de auth 
-    path('cuentas/', include('django.contrib.auth.urls')),
-
+    # Módulo del catálogo
+    path('catalogo/', include('catalogo.urls')),
     
+    # Módulo de préstamos
+    path('prestamos/', include('prestamos.urls')),
 ]

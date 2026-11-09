@@ -43,34 +43,33 @@
 
                 <!-- Menú de Navegación -->
                 <nav class="space-y-1">
-                    <a href="{% url 'home' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
+
+                    <!-- enlaces comunes -->
+                     <a href="{% url 'home' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
                         Inicio
-                    </a>
+                     </a>
 
-                    <a href="{% url 'catalogo' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
-                        Catálogo
-                    </a>
+                     <a href="{% url 'catalogo' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                        Catalogo
+                     </a>
 
-                    <a href="{% url 'prestamos' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
-                        Mis Préstamos
-                    </a>
+                     {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+                        <!-- opciones exclusivas bibiliotecario -->
+                         <div class="pt-4 bp-1">
+                            <span class="px-4 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                Gestion Operativa
+                            </span>
+                         </div>
 
-                    <a href="{% url 'historial' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
-                        Historial
-                    </a>
-
-                    <!-- Enlaces exclusivos según rol -->
-                    {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-                        <a href="{% url 'lista_sugerencias' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
-                            Sugerencias
-                        </a>
-                    {% endif %}
-
-                    {% if user.tipo_usuario == 'PROFESOR' %}
-                        <a href="{% url 'sugerir_adquisicion' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-all">
-                             Sugerir Libro
-                        </a>
-                    {% endif %}
+                         <a href="#" class="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                                Usuarios
+                         </a>
+                     {% else %}
+                         <!-- opciones para estudiantes y profesores -->
+                          <a href="{% url 'mis_prestamos' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-300 hover:bg-gray-800 hover:text-white transition-colors">
+                                Mis prestamos
+                          </a>
+                     {% endif %}
                 </nav>
             </div>
 

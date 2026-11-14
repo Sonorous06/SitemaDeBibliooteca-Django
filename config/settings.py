@@ -136,3 +136,13 @@ AUTH_USER_MODEL = "cuentas.Usuario"
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
+
+# configuracion de envio de correo
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_HOST = 
+#EMAIL_PORT = 587
+#EMAIL_USE_TLS = True
+#EMAIL_HOST_USER = 'santiagochavezcfi@gmail.com'
+#EMAIL_HOST_PASSWORD = 
+
+

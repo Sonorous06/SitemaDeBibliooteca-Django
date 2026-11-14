@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto my-8 p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-xl">
+
+    <!-- encabezado de la seccion -->
+     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-gray-800">
+        <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-sky-400">
+                Administracion
+            </span>
+            <h1 class="text-2xl font-bold text-white mt-1">
+                Gestion de Usuarios (cu-20 - cu-22)
+            </h1>
+            <p class="text-gray-400 text-sm">
+                Consulta de estudiantes y profesores con control de bloqueo administrativo.
+            </p>
+        </div>
+        <div class="mt-4 md:mt-0">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                Total usuarios : {{usuarios.count}}
+            </span>
+        </div>
+     </div>
+
+     <!-- mensajes de sistema -->
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm font-medium border {% if message.tags == 'error' %}bg-rose-500/10 border-rose-500/30 text-rose-400{% elif message.tags == 'warning' %}bg-amber-500/10 border-amber-500/30 text-amber-400{% else %}bg-emerald-500/10 border-emerald-500/30 text-emerald-400{% endif %}">
+                    {{message}}
+                </div>
+            {% endfor %}
+        </div>
+      {% endif %}
+
+    <!-- tabla de usuarios -->
+
+</div>
+
+{% endblock %}

@@ -109,3 +109,73 @@ biblioteca_escolar/
 ├── templates/               # Plantillas HTML globales
 ├── manage.py
 └── README.md
+---
+
+##  Requisitos Previos e Instalación
+
+### 1. Clonar el Repositorio
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd biblioteca_escolar
+```
+
+### 2. Crear y Activar el Entorno Virtual
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# Linux / macOS
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Instalar Dependencias
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Configuración de Base de Datos
+
+1. Crear la base de datos en MySQL:
+```sql
+CREATE DATABASE bd_biblioteca CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+2. Configurar credenciales en `config/settings.py`:
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'bd_biblioteca',
+        'USER': 'root',
+        'PASSWORD': 'tu_password',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    }
+}
+```
+
+3. Aplicar migraciones y crear superusuario:
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+```
+
+4. Iniciar el servidor de desarrollo:
+```bash
+python manage.py runserver
+```
+
+---
+
+## Tareas en Segundo Plano
+
+Para ejecutar el proceso automático de cálculo de multas y vencimientos:
+
+```bash
+python manage.py procesar_vencimientos
+```

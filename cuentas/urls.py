@@ -1,3 +1,4 @@
+from django.contrib.auth import views as auth_views
 from django.urls import path 
 from . import views 
 
@@ -8,5 +9,11 @@ urlpatterns = [
     path('usuarios/<int:usuario_id>/bloquear/', views.alternar_bloqueo_usuario_view, name='alternar_bloqueo_usuario'),
     
     #recuperacion de contraseña personalizada | envio correo cu 03
-    path('recuperar-password/', views.recuperar_password_custom_view, name='password_reset'),
+    path(
+        'recuperar-password/',
+        auth_views.PasswordResetView.as_view(
+            template_name='registration/password_reset_form.html',
+        ),
+        name='password_reset',
+    ),
 ]

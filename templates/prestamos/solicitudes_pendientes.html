@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Entrega de préstamos · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Gestión de préstamos
+    </p>
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        Solicitudes pendientes
+    </h1>
+    <p class="text-muted mt-3">
+        Verifica la identidad del lector y entrega el ejemplar indicado
+        antes de confirmar.
+    </p>
+</div>
+
+<div class="bg-paper border border-line rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-sand text-coffee">
+                <tr>
+                    <th class="px-5 py-4">Solicitud</th>
+                    <th class="px-5 py-4">Usuario</th>
+                    <th class="px-5 py-4">Libro y ejemplar</th>
+                    <th class="px-5 py-4">Límite de recogida</th>
+                    <th class="px-5 py-4">Acción</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for p in solicitudes %}
+                <tr>
+                    <td class="px-5 py-4 text-coffee">
+                        #{{ p.id }}
+                    </td>
+                    <td class="px-5 py-4">
+                        <p class="font-semibold text-coffee">
+                            {{ p.usuario.get_full_name|default:p.usuario.username }}
+                        </p>
+                        <p class="text-sm text-muted">
+                            @{{ p.usuario.username }}
+                        </p>
+                    </td>
+                    <td class="px-5 py-4">
+                        <p class="font-semibold text-navy">
+                            {{ p.ejemplar.libro.titulo }}
+                        </p>
+                        <p class="text-sm text-muted">
+                            {{ p.ejemplar.codigo_inventario }}
+                        </p>
+                    </td>
+                    <td class="px-5 py-4 text-coffee">
+                        {{ p.fecha_limite_recoger|date:"d/m/Y H:i"|default:"Sin límite registrado" }}
+                    </td>
+                    <td class="px-5 py-4">
+                        {% if p.fecha_limite_recoger and p.fecha_limite_recoger <= ahora %}
+                            <span class="text-sm font-semibold text-bad">
+                                Plazo terminado
+                            </span>
+                        {% elif p.usuario.bloqueado %}
+                            <span class="text-sm font-semibold text-bad">
+                                Cuenta bloqueada
+                            </span>
+                        {% else %}
+                            <form method="post"
+                                  action="{% url 'entregar_prestamo' p.id %}">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="px-4 py-2 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                                    Confirmar entrega
+                                </button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5"
+                        class="px-5 py-10 text-center text-muted">
+                        No hay solicitudes pendientes de entrega.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

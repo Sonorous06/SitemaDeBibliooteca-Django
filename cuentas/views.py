@@ -1,3 +1,5 @@
+from django.db import transaction
+from django.views.decorators.http import require_POST
 from datetime import timedelta 
 from django.conf import settings 
 from django.contrib import messages 
@@ -67,24 +69,48 @@ def lista_usuarios_view(request):
     return render(request,'cuentas/lista_usuarios.html' , {'usuarios': usuarios})
 
 @login_required
+@require_POST
 def alternar_bloqueo_usuario_view(request, usuario_id):
-    """ Permite al bibliotecario bloquear o desbloquear la cuenta de un usuario"""
+    """Permite al bibliotecario bloquear o desbloquear una cuenta."""
     if request.user.tipo_usuario != 'BIBLIOTECARIO':
-        messages.error(request, "Acceso no autorizado")
+        messages.error(request, 'Acceso no autorizado.')
         return redirect('catalogo')
-    
-    usuario = get_object_or_404(Usuario, pk=usuario_id)
-    
-    if usuario.bloqueado:
-        usuario.bloqueado = False
-        usuario.motivo_bloqueo = None
-        messages.success(request, f'Se desbloqueó la cuenta de {usuario.username}')
-    else :
-        usuario.bloqueo = True
-        usuario.motivo_bloqueo = 'Bloque administro por el biblioteca'
-        messages.warning(request, f'Se bloqueó la cuenta de {usuario.username}.') 
-        
-    usuario.save()
+
+    if usuario_id == request.user.pk:
+        messages.error(request, 'No puedes bloquear tu propia cuenta.')
+        return redirect('lista_usuarios')
+
+    with transaction.atomic():
+        usuario = get_object_or_404(
+            Usuario.objects.select_for_update(),
+            pk=usuario_id
+        )
+
+        if usuario.bloqueado:
+            usuario.bloqueado = False
+            usuario.motivo_bloqueo = None
+            mensaje = f'Se desbloqueó la cuenta de {usuario.username}.'
+        else:
+            motivo = request.POST.get('motivo_bloqueo', '').strip()
+
+            if not motivo:
+                messages.error(request, 'Escribe el motivo del bloqueo.')
+                return redirect('lista_usuarios')
+
+            if len(motivo) > 255:
+                messages.error(
+                    request,
+                    'El motivo debe tener como máximo 255 caracteres.'
+                )
+                return redirect('lista_usuarios')
+
+            usuario.bloqueado = True
+            usuario.motivo_bloqueo = motivo
+            mensaje = f'Se bloqueó la cuenta de {usuario.username}.'
+
+        usuario.save(update_fields=['bloqueado', 'motivo_bloqueo'])
+
+    messages.success(request, mensaje)
     return redirect('lista_usuarios')
         
 #recuperacion de contraseña personalizada
@@ -120,11 +146,12 @@ def recuperar_password_custom_view(request):
                 [correo_destino],
                 fail_silently=False
             )
-            
             return redirect('password_reset_done')
-        else :
-            form = RecuperarPasswordCustomForm()
-            
-        return render(
-            request, 'registration/password_reset_form.html', {'form': form}
-        )
+    else:
+        form = RecuperarPasswordCustomForm()
+
+    return render(
+        request,
+        'registration/password_reset_form.html',
+        {'form': form}
+    )

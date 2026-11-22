@@ -66,7 +66,9 @@ class Usuario(AbstractUser):
     
     def total_prestamos_activos(self):
         """Cuenta préstamos vigentes (SOLICITADO o ACTIVO)."""
-        return self.prestamos.filter(estado_in=['SOLICITADO','ACTIVO']).count()
+        return self.prestamos.filter(
+        estado__in=['SOLICITADO', 'ACTIVO']
+        ).count()
     
     def puede_solicitar_prestamos(self):
         """ Evalúa elegibilidad (RN-08, RN-01, RN-02, Bloqueo). Retorna (Bool, Mensaje) """

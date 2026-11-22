@@ -16,7 +16,7 @@ def solicitar_prestamo_view(request, libro_id):
     libro = get_object_or_404(Libro, pk=libro_id)
     
     #valida elegibilidad del usuario (sin multas pendientes ni vencidas)
-    puede_pedir, mensaje_error = request.user.puede_solicitar_prestamo()
+    puede_pedir, mensaje_error = request.user.puede_solicitar_prestamos()
     if not puede_pedir:
         messages.error(request, mensaje_error)
         return redirect('catalogo')
@@ -27,7 +27,9 @@ def solicitar_prestamo_view(request, libro_id):
         messages.warning(request, f"No hay ejemplares disponibles de '{libro.titulo}'.")
         return redirect('catalogo')
     
-    politica = PoliticaPrestamo.object.filter(tipo_usuario=request.user.tipo_usuario).first()
+    politica = PoliticaPrestamo.objects.filter(
+    tipo_usuario=request.user.tipo_usuario
+    ).first()
     horas_tol = politica.horas_para_recoger if politica else 48
     fecha_ahora = timezone.now()
     

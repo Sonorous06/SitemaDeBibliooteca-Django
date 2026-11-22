@@ -6,11 +6,13 @@
 <!-- Encabezado -->
 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
     <div>
-        <span class="text-[11px] font-bold uppercase tracking-[.16em] text-caramel">Administración</span>
+        <span class="text-[11px] font-bold uppercase tracking-[f.16em] text-caramel">Administración</span>
         <h1 class="font-serif font-bold text-navy text-3xl sm:text-4xl mt-1.5 leading-tight">Gestión de usuarios</h1>
-        <p class="text-muted mt-2.5 max-w-xl">Consulta de estudiantes y profesores con control de bloqueo administrativo.</p>
+        <p class="text-muted mt-2.5 max-w-xl">Consulta de estudiantes y profesores con control de bloqueo
+            administrativo.</p>
     </div>
-    <span class="inline-flex items-center self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-semibold bg-steel/15 text-steel shrink-0">
+    <span
+        class="inline-flex items-center self-start sm:self-auto px-3.5 py-1.5 rounded-full text-xs font-semibold bg-steel/15 text-steel shrink-0">
         Total de usuarios: {{ usuarios.count }}
     </span>
 </div>
@@ -30,50 +32,75 @@
             </thead>
             <tbody class="divide-y divide-line">
                 {% for u in usuarios %}
-                    <tr class="hover:bg-sand/40 transition-colors">
-                        <td class="px-5 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full grid place-items-center text-sm font-bold bg-steel text-white shrink-0">
-                                    {{ u.username|slice:":1"|upper }}
-                                </div>
-                                <div class="min-w-0">
-                                    <p class="font-semibold text-coffee truncate">{{ u.get_full_name|default:u.username }}</p>
-                                    <p class="text-xs text-muted">@{{ u.username }}</p>
-                                </div>
+                <tr class="hover:bg-sand/40 transition-colors">
+                    <td class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-9 h-9 rounded-full grid place-items-center text-sm font-bold bg-steel text-white shrink-0">
+                                {{ u.username|slice:":1"|upper }}
                             </div>
-                        </td>
-                        <td class="px-5 py-4 text-muted hidden md:table-cell">{{ u.email|default:"—" }}</td>
-                        <td class="px-5 py-4">
-                            <span class="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-caramel/20 text-coffee">
-                                {{ u.tipo_usuario }}
-                            </span>
-                        </td>
-                        <td class="px-5 py-4 text-center">
+                            <div class="min-w-0">
+                                <p class="font-semibold text-coffee truncate">{{ u.get_full_name|default:u.username }}
+                                </p>
+                                <p class="text-xs text-muted">@{{ u.username }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-5 py-4 text-muted hidden md:table-cell">{{ u.email|default:"—" }}</td>
+                    <td class="px-5 py-4">
+                        <span
+                            class="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-caramel/20 text-coffee">
+                            {{ u.tipo_usuario }}
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-center">
+                        {% if u.bloqueado %}
+                        <span
+                            class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-bad/15 text-bad">Bloqueado</span>
+                        {% else %}
+                        <span
+                            class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-ok/15 text-ok">Activo</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-center">
+                        {% if u.id != user.id %}
+                        <form method="post" action="{% url 'alternar_bloqueo_usuario' u.id %}"
+                            class="flex flex-col items-center gap-2">
+                            {% csrf_token %}
+
                             {% if u.bloqueado %}
-                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-bad/15 text-bad">Bloqueado</span>
+                            <p class="text-xs text-muted max-w-xs break-words">
+                                {{ u.motivo_bloqueo|default:"Sin motivo registrado" }}
+                            </p>
+
+                            <button type="submit"
+                                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-ok text-white hover:bg-ok/85">
+                                Desbloquear
+                            </button>
                             {% else %}
-                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-ok/15 text-ok">Activo</span>
+                            <label for="motivo-{{ u.id }}" class="text-xs text-muted">
+                                Motivo del bloqueo
+                            </label>
+
+                            <input type="text" id="motivo-{{ u.id }}" name="motivo_bloqueo" required maxlength="255"
+                                placeholder="Escribe el motivo"
+                                class="w-full min-w-48 px-3 py-2 rounded-lg border border-line bg-paper text-coffee">
+
+                            <button type="submit"
+                                class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-bad text-bad hover:bg-bad hover:text-white">
+                                Bloquear
+                            </button>
                             {% endif %}
-                        </td>
-                        <td class="px-5 py-4 text-center">
-                            {% if u.id != user.id %}
-                                <form method="post" action="{% url 'alternar_bloqueo_usuario' u.id %}" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition
-                                                   {% if u.bloqueado %}bg-ok hover:bg-ok/85 text-white{% else %}border border-bad text-bad hover:bg-bad hover:text-white{% endif %}">
-                                        {% if u.bloqueado %}Desbloquear{% else %}Bloquear{% endif %}
-                                    </button>
-                                </form>
-                            {% else %}
-                                <span class="text-xs italic text-muted">Tu cuenta</span>
-                            {% endif %}
-                        </td>
-                    </tr>
+                        </form>
+                        {% else %}
+                        <span class="text-xs italic text-muted">Tu cuenta</span>
+                        {% endif %}
+                    </td>
+                </tr>
                 {% empty %}
-                    <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-sm text-muted">No hay usuarios registrados.</td>
-                    </tr>
+                <tr>
+                    <td colspan="5" class="px-5 py-12 text-center text-sm text-muted">No hay usuarios registrados.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

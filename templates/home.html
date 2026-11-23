@@ -159,4 +159,12 @@
     </a>
 </div>
 {% endif %}
+{% if user.tipo_usuario == 'ESTUDIANTE' or user.tipo_usuario == 'PROFESOR' %}
+<div class="mt-6">
+    <a href="{% url 'mis_multas' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Mis multas
+    </a>
+</div>
+{% endif %}
 {% endblock %}

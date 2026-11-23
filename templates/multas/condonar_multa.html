@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Condonar multa · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <h1 class="font-serif text-3xl font-bold text-navy mb-6">
+        Condonar multa
+    </h1>
+
+    <div class="bg-paper border border-line rounded-2xl p-6">
+        <dl class="space-y-3 text-coffee">
+            <div>
+                <dt class="text-sm text-muted">Multa</dt>
+                <dd class="font-semibold">#{{ multa.id }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Usuario</dt>
+                <dd class="font-semibold">{{ multa.usuario.username }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Libro</dt>
+                <dd>{{ multa.prestamo.ejemplar.libro.titulo }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Monto</dt>
+                <dd class="font-serif text-3xl font-bold text-navy">
+                    ${{ multa.monto|floatformat:2 }} MXN
+                </dd>
+            </div>
+        </dl>
+
+        {% if multa.estado == 'PENDIENTE' %}
+        <form method="post" class="mt-6">
+            {% csrf_token %}
+
+            {{ form.non_field_errors }}
+
+            <label for="{{ form.justificacion.id_for_label }}"
+                   class="block font-semibold text-coffee mb-2">
+                Justificación de la condonación
+            </label>
+
+            {{ form.justificacion }}
+
+            <div class="text-bad text-sm mt-2">
+                {{ form.justificacion.errors }}
+            </div>
+
+            <p class="text-sm text-muted mt-4">
+                La multa permanecerá en el historial como Condonada.
+                Se guardarán tu usuario y la justificación.
+                Esta acción no registra un pago.
+            </p>
+
+            <button type="submit"
+                    class="mt-5 px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                Confirmar condonación
+            </button>
+        </form>
+        {% else %}
+        <p class="text-bad mt-6">
+            Esta multa ya no está pendiente y no puede condonarse.
+        </p>
+        {% endif %}
+
+        <a href="{% url 'multas_pendientes' %}"
+           class="inline-block mt-5 text-steel font-semibold">
+            Volver a multas pendientes
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 # Create your views here.
-
+from .forms import CondonarMultaForm
 from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
@@ -135,5 +135,67 @@ def registrar_pago_view(request, multa_id):
             'multa': multa,
             'form': form,
             'saldo': saldo,
+        }
+    )
+@login_required
+@require_http_methods(['GET', 'POST'])
+def condonar_multa_view(request, multa_id):
+    """Permite al bibliotecario condonar una multa con justificación."""
+    if request.user.tipo_usuario != 'BIBLIOTECARIO':
+        messages.error(request, 'Acceso no autorizado.')
+        return redirect('home')
+
+    multa = get_object_or_404(Multa, pk=multa_id)
+    form = CondonarMultaForm(
+        request.POST if request.method == 'POST' else None
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            Usuario.objects.select_for_update().get(
+                pk=multa.usuario_id
+            )
+            multa = Multa.objects.select_for_update().get(
+                pk=multa_id
+            )
+
+            if multa.estado != 'PENDIENTE':
+                messages.error(
+                    request,
+                    'Solo se pueden condonar multas pendientes.'
+                )
+                return redirect('multas_pendientes')
+
+            if multa.pagos.exists():
+                messages.error(
+                    request,
+                    'Esta multa tiene pagos registrados. '
+                    'Revisa el caso antes de condonarla.'
+                )
+                return redirect('multas_pendientes')
+
+            multa.estado = 'CONDONADA'
+            multa.justificacion_condonacion = (
+                form.cleaned_data['justificacion']
+            )
+            multa.condonada_por = request.user
+            multa.save(update_fields=[
+                'estado',
+                'justificacion_condonacion',
+                'condonada_por',
+            ])
+
+        messages.success(
+            request,
+            f'Multa #{multa.id} condonada con justificación.'
+        )
+        return redirect('multas_pendientes')
+
+    return render(
+        request,
+        'multas/condonar_multa.html',
+        {
+            'multa': multa,
+            'form': form,
         }
     )

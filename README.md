@@ -181,8 +181,8 @@ puedes poblar la base de datos con libros, categorías y usuarios de prueba ejec
 ```# 1\. Cargar categorías, editoriales, autores y catálogo de libros
 python poblar_libros.py
 ```
-```## 2\. Cargar cuentas de profesor y alumnos python
-poblar\_usuarios.py
+```## 2\. Cargar cuentas de profesor y alumnos
+ python poblar_usuarios.py
 ```
 Abre `http://127.0.0.1:8000/`. Detén el servidor con `Ctrl + C`.
 

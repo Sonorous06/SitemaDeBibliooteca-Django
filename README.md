@@ -175,6 +175,15 @@ Si utilizas una base creada previamente con SQL, compara las tablas y el histori
 .\.venv\Scripts\python.exe manage.py runserver
 ```
 
+### 7. Carga de Datos de Prueba Una vez aplicadas las migraciones
+puedes poblar la base de datos con libros, categorías y usuarios de prueba ejecutando los siguientes scripts en tu terminal con el entorno virtual activo: 
+
+```# 1\. Cargar categorías, editoriales, autores y catálogo de libros
+python poblar_libros.py
+```
+```## 2\. Cargar cuentas de profesor y alumnos python
+poblar\_usuarios.py
+```
 Abre `http://127.0.0.1:8000/`. Detén el servidor con `Ctrl + C`.
 
 ## Preparación de datos y políticas

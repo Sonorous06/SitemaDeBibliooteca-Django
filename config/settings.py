@@ -31,7 +31,8 @@ INSTALLED_APPS = [
     "cuentas",
     "catalogo",
     "prestamos",
-    "multas"
+    "multas",
+    "notificaciones",
 ]
 
 MIDDLEWARE = [

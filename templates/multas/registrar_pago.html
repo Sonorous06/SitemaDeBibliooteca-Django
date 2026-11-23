@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Registrar pago · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <h1 class="font-serif text-3xl font-bold text-navy mb-6">
+        Registrar pago
+    </h1>
+
+    <div class="bg-paper border border-line rounded-2xl p-6">
+        <dl class="space-y-3 text-coffee">
+            <div>
+                <dt class="text-sm text-muted">Multa</dt>
+                <dd class="font-semibold">#{{ multa.id }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Usuario</dt>
+                <dd class="font-semibold">{{ multa.usuario.username }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Libro</dt>
+                <dd>{{ multa.prestamo.ejemplar.libro.titulo }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Motivo</dt>
+                <dd>{{ multa.get_motivo_display }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-muted">Saldo por liquidar</dt>
+                <dd class="font-serif text-3xl font-bold text-navy">
+                    ${{ saldo|floatformat:2 }} MXN
+                </dd>
+            </div>
+        </dl>
+
+        {% if multa.estado == 'PENDIENTE' and saldo > 0 %}
+        <form method="post" class="mt-6">
+            {% csrf_token %}
+
+            {{ form.non_field_errors }}
+
+            <label for="{{ form.metodo.id_for_label }}"
+                   class="block font-semibold text-coffee mb-2">
+                Método de pago
+            </label>
+
+            <div class="text-coffee">
+                {{ form.metodo }}
+                {{ form.metodo.errors }}
+            </div>
+
+            <p class="text-sm text-muted mt-5">
+                Confirma únicamente después de recibir el pago completo.
+                El folio se generará automáticamente.
+            </p>
+
+            <button type="submit"
+                    class="mt-5 px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                Confirmar pago recibido
+            </button>
+        </form>
+        {% else %}
+        <p class="text-muted mt-6">
+            Esta multa no tiene un saldo pendiente que pueda cobrarse.
+        </p>
+        {% endif %}
+
+        <a href="{% url 'multas_pendientes' %}"
+           class="inline-block mt-5 text-steel font-semibold">
+            Volver a multas pendientes
+        </a>
+    </div>
+</div>
+{% endblock %}

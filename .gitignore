@@ -1,0 +1,17 @@
+#entorno virtual y cache de python
+venv/
+.venv/
+env
+__pycache__/
+*.pyc
+
+#archivo de base de datos
+db.sqlite3
+
+#archivos (imagenees o de prueba)
+media/
+
+#Configuracion de editores
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis multas · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Mi cuenta
+    </p>
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        Mis multas
+    </h1>
+    <p class="text-muted mt-3">
+        Consulta tus multas y su estado.
+        Para registrar un pago, acude con el bibliotecario.
+    </p>
+</div>
+
+<div class="bg-paper border border-line rounded-2xl p-6 mb-6">
+    <p class="text-sm text-muted">Total pendiente de pago</p>
+    <p class="font-serif text-3xl font-bold text-navy mt-2">
+        ${{ total_pendiente|floatformat:2 }} MXN
+    </p>
+
+    {% if total_pendiente > 0 %}
+    <p class="text-sm text-bad mt-3">
+        Las multas pendientes impiden solicitar nuevos préstamos.
+    </p>
+    {% endif %}
+</div>
+
+<div class="bg-paper border border-line rounded-2xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-sand text-coffee">
+                <tr>
+                    <th class="px-5 py-4">Multa</th>
+                    <th class="px-5 py-4">Libro</th>
+                    <th class="px-5 py-4">Motivo</th>
+                    <th class="px-5 py-4">Fecha</th>
+                    <th class="px-5 py-4">Monto</th>
+                    <th class="px-5 py-4">Estado</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-line">
+                {% for m in multas %}
+                <tr>
+                    <td class="px-5 py-4 text-coffee">
+                        #{{ m.id }}
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <p class="font-semibold text-navy">
+                            {{ m.prestamo.ejemplar.libro.titulo }}
+                        </p>
+                        <p class="text-sm text-muted">
+                            Préstamo #{{ m.prestamo_id }}
+                            · {{ m.prestamo.ejemplar.codigo_inventario }}
+                        </p>
+                    </td>
+
+                    <td class="px-5 py-4 text-coffee">
+                        {{ m.get_motivo_display }}
+                        {% if m.motivo == 'RETRASO' %}
+                        <p class="text-sm text-muted">
+                            {{ m.dias_retraso }} días de retraso
+                        </p>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-5 py-4 text-coffee">
+                        {{ m.fecha_generacion|date:"d/m/Y" }}
+                    </td>
+
+                    <td class="px-5 py-4 font-semibold text-coffee">
+                        ${{ m.monto|floatformat:2 }} MXN
+                    </td>
+
+                    <td class="px-5 py-4">
+                        <span class="text-sm font-semibold
+                            {% if m.estado == 'PENDIENTE' %}
+                                text-bad
+                            {% else %}
+                                text-green-700
+                            {% endif %}">
+                            {{ m.get_estado_display }}
+                        </span>
+                        {% if m.estado == 'CONDONADA' %}
+                        <p class="text-sm text-muted mt-2">
+                            {{ m.justificacion_condonacion }}
+                        </p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-5 py-10 text-center text-muted">
+                        No tienes multas registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

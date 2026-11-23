@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis préstamos · Biblio Escolar{% endblock %}
+
+{% block content %}
+<span class="text-[11px] font-bold uppercase tracking-[.16em] text-caramel">Mi historial</span>
+<h1 class="font-serif font-bold text-navy text-3xl sm:text-4xl mt-1.5 leading-tight">Mis préstamos</h1>
+<p class="text-muted mt-2.5 max-w-xl">Consulta el estado de tus solicitudes, libros activos y fechas de vencimiento.</p>
+
+<div class="mt-8 bg-paper border border-line rounded-2xl shadow-soft overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead>
+                <tr class="bg-sand text-[11px] font-bold uppercase tracking-[.12em] text-muted">
+                    <th class="px-5 py-3.5">Libro</th>
+                    <th class="px-5 py-3.5 hidden sm:table-cell">Ejemplar</th>
+                    <th class="px-5 py-3.5">Fecha solicitud</th>
+                    <th class="px-5 py-3.5">Vencimiento</th>
+                    <th class="px-5 py-3.5 text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for prestamo in prestamos %}
+                    <tr class="hover:bg-sand/40 transition-colors">
+                        <td class="px-5 py-4 font-semibold text-coffee max-w-xs truncate">
+                            {{ prestamo.ejemplar.libro.titulo }}
+                        </td>
+                        <td class="px-5 py-4 font-mono text-xs text-muted hidden sm:table-cell">
+                            {{ prestamo.ejemplar.codigo_inventario }}
+                        </td>
+                        <td class="px-5 py-4 text-xs">
+                            {{ prestamo.fecha_solicitud|date:"d/m/Y H:i" }}
+                        </td>
+                        <td class="px-5 py-4 text-xs font-semibold">
+                            {% if prestamo.fecha_vencimiento %}
+                                {{ prestamo.fecha_vencimiento|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="font-normal text-muted">Pendiente de recolección</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-4 text-center">
+                            {% if prestamo.estado == 'SOLICITADO' %}
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-steel/15 text-steel">Por recoger</span>
+                                <p class="text-[11px] text-muted mt-1">hasta {{ prestamo.fecha_limite_recoger|date:"d/m H:i" }}</p>
+                            {% elif prestamo.estado == 'ACTIVO' %}
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-ok/15 text-ok">En préstamo</span>
+                            {% elif prestamo.estado == 'VENCIDO' %}
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-bad/15 text-bad">Vencido</span>
+                            {% elif prestamo.estado == 'DEVUELTO' %}
+                                <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-sand text-muted">Devuelto</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-12 text-center text-sm text-muted">
+                            Aún no has realizado ninguna solicitud de préstamo.
+                            <a href="{% url 'catalogo' %}" class="text-steel hover:underline font-semibold ml-1">Explorar catálogo</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

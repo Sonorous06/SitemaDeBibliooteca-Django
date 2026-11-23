@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio · Biblio Escolar{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div>
+    <span class="text-[11px] font-bold uppercase tracking-[.16em] text-caramel">Panel principal</span>
+    <h1 class="font-serif font-bold text-navy text-3xl sm:text-4xl mt-1.5 leading-tight">
+        Hola de nuevo, {{ user.get_full_name|default:user.username }}
+    </h1>
+    <p class="text-muted mt-2.5 max-w-xl">
+        {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+            Este es el resumen de la actividad de la biblioteca el día de hoy.
+        {% else %}
+            Bienvenido a la biblioteca. Que tengas una buena jornada de lectura.
+        {% endif %}
+    </p>
+    <a href="{% url 'catalogo' %}"
+       class="inline-flex items-center justify-center gap-2 mt-5 px-5 py-2.5 bg-navy hover:bg-steel text-white text-sm font-semibold rounded-[10px] shadow-[0_4px_14px_rgba(31,48,71,.30)] transition hover:-translate-y-px">
+        Explorar catálogo →
+    </a>
+</div>
+
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<!-- Métricas del bibliotecario -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-9">
+    <div class="bg-paper border border-line rounded-2xl shadow-soft p-6">
+        <span class="text-[11px] font-bold uppercase tracking-[.12em] text-caramel">Solicitudes pendientes</span>
+        <p class="font-serif text-4xl text-coffee mt-2 leading-none">{{ solicitudes_pendientes }}</p>
+        <small class="text-xs text-muted">por entregar en mostrador</small>
+    </div>
+    <div class="bg-paper border border-line rounded-2xl shadow-soft p-6">
+        <span class="text-[11px] font-bold uppercase tracking-[.12em] text-caramel">Devoluciones hoy</span>
+        <p class="font-serif text-4xl text-coffee mt-2 leading-none">{{ devoluciones_hoy }}</p>
+        <small class="text-xs text-muted">préstamos que vencen hoy</small>
+    </div>
+    <div class="bg-paper border border-line rounded-2xl shadow-soft p-6">
+        <span class="text-[11px] font-bold uppercase tracking-[.12em] text-caramel">Préstamos vencidos</span>
+        <p class="font-serif text-4xl mt-2 leading-none {% if prestamos_vencidos %}text-bad{% else %}text-coffee{% endif %}">{{ prestamos_vencidos }}</p>
+        <small class="text-xs text-muted">requieren seguimiento</small>
+    </div>
+</div>
+{% endif %}
+
+<!-- Accesos rápidos -->
+<h2 class="font-serif font-bold text-navy text-[22px] mt-10 mb-4">Accesos rápidos</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+    <a href="{% url 'catalogo' %}" class="group block bg-paper border border-line rounded-2xl shadow-soft p-6 transition hover:-translate-y-[3px] hover:border-caramel">
+        <div class="w-11 h-11 rounded-xl grid place-items-center mb-4 bg-steel/15 text-steel">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h5v16H4zM10 4h5v16h-5z"/><path d="M17 5l4 1-3.5 14-4-1"/></svg>
+        </div>
+        <h3 class="font-serif font-bold text-navy text-xl">Explorar libros</h3>
+        <p class="text-sm text-muted mt-1">Busca por título, autor o categoría.</p>
+        <span class="inline-block mt-3.5 text-[13px] font-semibold text-steel group-hover:translate-x-1 transition-transform">Ver disponibles →</span>
+    </a>
+
+    {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+        <a href="{% url 'lista_sugerencias' %}" class="group block bg-paper border border-line rounded-2xl shadow-soft p-6 transition hover:-translate-y-[3px] hover:border-caramel">
+            <div class="w-11 h-11 rounded-xl grid place-items-center mb-4 bg-caramel/20 text-caramel">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 9l7-6 7 6"/></svg>
+            </div>
+            <h3 class="font-serif font-bold text-navy text-xl">Sugerencias</h3>
+            <p class="text-sm text-muted mt-1">Revisa las propuestas de compra de los docentes.</p>
+            <span class="inline-block mt-3.5 text-[13px] font-semibold text-caramel group-hover:translate-x-1 transition-transform">Revisar lista →</span>
+        </a>
+
+        <a href="{% url 'lista_usuarios' %}" class="group block bg-paper border border-line rounded-2xl shadow-soft p-6 transition hover:-translate-y-[3px] hover:border-caramel">
+            <div class="w-11 h-11 rounded-xl grid place-items-center mb-4 bg-steel/15 text-steel">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><path d="M17 5a3.5 3.5 0 0 1 0 6M22 20c0-2.5-1.5-4.5-4-5.5"/></svg>
+            </div>
+            <h3 class="font-serif font-bold text-navy text-xl">Usuarios</h3>
+            <p class="text-sm text-muted mt-1">Consulta cuentas y administra bloqueos.</p>
+            <span class="inline-block mt-3.5 text-[13px] font-semibold text-steel group-hover:translate-x-1 transition-transform">Gestionar →</span>
+        </a>
+    {% else %}
+        <a href="{% url 'mis_prestamos' %}" class="group block bg-paper border border-line rounded-2xl shadow-soft p-6 transition hover:-translate-y-[3px] hover:border-caramel">
+            <div class="w-11 h-11 rounded-xl grid place-items-center mb-4 bg-steel/15 text-steel">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            </div>
+            <h3 class="font-serif font-bold text-navy text-xl">Mis préstamos</h3>
+            <p class="text-sm text-muted mt-1">Consulta estados y fechas de entrega.</p>
+            <span class="inline-block mt-3.5 text-[13px] font-semibold text-steel group-hover:translate-x-1 transition-transform">Consultar estado →</span>
+        </a>
+
+        {% if user.tipo_usuario == 'PROFESOR' %}
+        <a href="{% url 'sugerir_adquisicion' %}" class="group block bg-paper border border-line rounded-2xl shadow-soft p-6 transition hover:-translate-y-[3px] hover:border-caramel">
+            <div class="w-11 h-11 rounded-xl grid place-items-center mb-4 bg-caramel/20 text-caramel">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <h3 class="font-serif font-bold text-navy text-xl">Sugerir un libro</h3>
+            <p class="text-sm text-muted mt-1">Propón títulos para la biblioteca.</p>
+            <span class="inline-block mt-3.5 text-[13px] font-semibold text-caramel group-hover:translate-x-1 transition-transform">Proponer compra →</span>
+        </a>
+        {% endif %}
+    {% endif %}
+</div>
+
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-10">
+
+    <!-- Vencen esta semana -->
+    <section class="bg-paper border border-line rounded-2xl shadow-soft overflow-hidden">
+        <div class="px-6 py-4 border-b border-line">
+            <h2 class="font-serif font-bold text-navy text-lg">Vencen esta semana</h2>
+        </div>
+        <ul class="divide-y divide-line">
+            {% for p in prestamos_vencen_semana %}
+                <li class="px-6 py-3.5 flex items-center justify-between gap-4">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-coffee truncate">{{ p.ejemplar.libro.titulo }}</p>
+                        <p class="text-xs text-muted">{{ p.usuario.get_full_name|default:p.usuario.username }}</p>
+                    </div>
+                    <span class="shrink-0 inline-block px-3 py-1 rounded-full text-xs font-semibold bg-warn/15 text-warn">
+                        {{ p.fecha_vencimiento|date:"d/m/Y" }}
+                    </span>
+                </li>
+            {% empty %}
+                <li class="px-6 py-8 text-center text-sm text-muted">No hay préstamos por vencer esta semana.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <!-- Poco stock -->
+    <section class="bg-paper border border-line rounded-2xl shadow-soft overflow-hidden">
+        <div class="px-6 py-4 border-b border-line">
+            <h2 class="font-serif font-bold text-navy text-lg">Libros con poco stock</h2>
+        </div>
+        <ul class="divide-y divide-line">
+            {% for libro in libros_poco_stock %}
+                <li class="px-6 py-3.5 flex items-center justify-between gap-4">
+                    <p class="text-sm font-semibold text-coffee truncate">{{ libro.titulo }}</p>
+                    <span class="shrink-0 inline-block px-3 py-1 rounded-full text-xs font-semibold
+                        {% if libro.stock_disponible == 0 %}bg-bad/15 text-bad{% else %}bg-warn/15 text-warn{% endif %}">
+                        {{ libro.stock_disponible }} disponible{{ libro.stock_disponible|pluralize }}
+                    </span>
+                </li>
+            {% empty %}
+                <li class="px-6 py-8 text-center text-sm text-muted">Todos los libros tienen buen stock.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+{% endif %}
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<div class="mt-8">
+    <a href="{% url 'solicitudes_pendientes' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Entregar préstamos
+    </a>
+</div>
+{% endif %}
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<div class="mt-4">
+    <a href="{% url 'devoluciones_pendientes' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Registrar devolución
+    </a>
+</div>
+{% endif %}
+{% if user.tipo_usuario == 'ESTUDIANTE' or user.tipo_usuario == 'PROFESOR' %}
+<div class="mt-6">
+    <a href="{% url 'mis_multas' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Mis multas
+    </a>
+</div>
+{% endif %}
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<div class="mt-4">
+    <a href="{% url 'multas_pendientes' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Gestionar multas
+    </a>
+</div>
+{% endif %}
+{% endblock %}

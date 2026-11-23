@@ -18,5 +18,6 @@ urlpatterns = [
         
     #otras apps (catalogo, prestamos, multas)
     path('catalogo/', include('catalogo.urls')),
-    path('prestamos/', include('prestamos.urls'))
+    path('prestamos/', include('prestamos.urls')),
+    path('multas/', include('multas.urls')),
 ]

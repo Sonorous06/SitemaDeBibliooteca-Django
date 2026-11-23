@@ -167,4 +167,12 @@
     </a>
 </div>
 {% endif %}
+{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+<div class="mt-4">
+    <a href="{% url 'multas_pendientes' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Gestionar multas
+    </a>
+</div>
+{% endif %}
 {% endblock %}

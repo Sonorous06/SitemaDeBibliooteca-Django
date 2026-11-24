@@ -180,6 +180,25 @@ python manage.py procesar_vencimientos
 
 ---
 
+## Carga de Datos de Prueba
+
+Para poblar la base de datos con información inicial:
+
+```
+python poblar_libros.py
+python poblar_usuarios.py
+
+```
+
+### Cuentas de prueba:
+
+| Rol               | Usuario     | Contraseña     | Detalles                      |
+| ----------------- | ----------- | -------------- | ----------------------------- |
+| **Bibliotecario** | `santiago`  | `santiago123`  | Personal de biblioteca        |
+| **Profesor**      | `nahomi`    | `nahomi123`    | Depto: Sistemas y Computación |
+| **Estudiante**    | `denisse`   | `denisse123`   | Carrera: Ing. en Software     |
+| **Estudiante**    | `francisco` | `francisco123` | Carrera: Ing. en Software     |
+
 ##  Trabajo Pendiente
 
 ###  Completado recientemente:

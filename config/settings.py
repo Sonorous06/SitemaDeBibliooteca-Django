@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     "catalogo",
     "prestamos",
     "multas"
+    "multas",
+    "notificaciones",
 ]
 
 MIDDLEWARE = [
@@ -71,6 +73,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "biblioteca",
+        "USER": "root",
+        "PASSWORD": "root",
+        "NAME": "biblioteca_db",
         "USER": "root",
         "PASSWORD": "root",
         "HOST": "127.0.0.1",

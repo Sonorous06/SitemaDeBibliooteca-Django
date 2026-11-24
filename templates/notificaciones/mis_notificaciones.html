@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Mis notificaciones · Biblio Escolar{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-12">
+    <p class="text-sm uppercase tracking-widest mb-3">
+        Mi cuenta
+    </p>
+
+    <h1 class="text-4xl font-bold mb-4">Mis notificaciones</h1>
+
+    <p class="mb-8">
+        Consulta los avisos de tus préstamos y reservas.
+    </p>
+
+    <div class="space-y-4">
+        {% for aviso in pagina %}
+        <article class="rounded-2xl border p-6 bg-white/60">
+            <div class="flex flex-wrap justify-between gap-3 mb-3">
+                <h2 class="font-bold">
+                    {{ aviso.get_tipo_display }}
+                </h2>
+
+                <span class="text-sm">
+                    {% if aviso.leida %}
+                        Leída
+                    {% else %}
+                        Nueva
+                    {% endif %}
+                </span>
+            </div>
+
+            <p class="mb-3">{{ aviso.mensaje }}</p>
+
+            <p class="text-sm mb-4">
+                {{ aviso.fecha|date:"d/m/Y H:i" }}
+            </p>
+
+            {% if not aviso.leida %}
+            <form method="post"
+                  action="{% url 'marcar_notificacion_leida' aviso.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="rounded-lg bg-slate-800 text-white px-4 py-2">
+                    Marcar como leída
+                </button>
+            </form>
+            {% endif %}
+        </article>
+        {% empty %}
+        <div class="rounded-2xl border p-6">
+            Todavía no tienes notificaciones.
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if pagina.has_other_pages %}
+    <nav class="flex items-center justify-center gap-5 mt-8"
+         aria-label="Páginas de notificaciones">
+        {% if pagina.has_previous %}
+        <a href="?page={{ pagina.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span>
+            Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+        </span>
+
+        {% if pagina.has_next %}
+        <a href="?page={{ pagina.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</section>
+{% endblock %}

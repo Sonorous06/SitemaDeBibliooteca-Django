@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import path, include 
 from cuentas.views import home_view 
 from django.contrib.auth import views as auth_views
+from django.urls import path, include
 
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path('catalogo/', include('catalogo.urls')),
     path('prestamos/', include('prestamos.urls')),
     path('multas/', include('multas.urls')),
+    path("notificaciones/", include("notificaciones.urls")),
 ]

@@ -4,34 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}Biblioteca Escolar{% endblock %}</title>
 
-    <!-- Fuentes: Playfair Display (títulos) + Inter (texto) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
         rel="stylesheet">
 
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        /* Paleta del proyecto */
-                        navy: '#1F3047',   /* color 1 */
-                        steel: '#41658A',   /* color 2 */
-                        cream: '#E9E2D6',   /* color 3 (fondo) */
-                        caramel: '#A27B5C',   /* color 4 */
-                        coffee: '#5A3E2B',   /* color 5 (texto) */
-                        /* Derivados del crema */
+                        navy: '#1F3047',
+                        steel: '#41658A',
+                        cream: '#E9E2D6',
+                        caramel: '#A27B5C',
+                        coffee: '#5A3E2B',
                         paper: '#F5F1E9',
                         sand: '#DDD4C5',
                         line: '#CFC4B2',
                         muted: '#7D6552',
-                        /* Estados */
                         ok: '#3F7D5E',
                         warn: '#A87414',
                         bad: '#B0483F',
@@ -43,20 +40,81 @@
                     boxShadow: {
                         soft: '0 8px 24px rgba(31,48,71,.10)',
                     },
-                }
+                },
+            },
+        };
+    </script>
+
+    <style>
+        .nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 0.65rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0.8;
+            transition: background-color 0.2s, opacity 0.2s;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            opacity: 1;
+        }
+
+        .nav-link.is-active {
+            color: white;
+            opacity: 1;
+        }
+
+        .nav-link svg {
+            width: 19px;
+            height: 19px;
+            flex-shrink: 0;
+        }
+
+        @media (min-width: 1280px) {
+            .nav-link {
+                height: 100%;
+            }
+
+            .nav-link.is-active::after {
+                content: "";
+                position: absolute;
+                left: 0.65rem;
+                right: 0.65rem;
+                bottom: -3px;
+                height: 3px;
+                background: white;
+                border-radius: 3px 3px 0 0;
             }
         }
-    </script>
+
+        @media (max-width: 1279px) {
+            .nav-link {
+                min-height: 44px;
+                border-radius: 10px;
+            }
+
+            .nav-link.is-active {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-cream text-coffee font-sans antialiased min-h-screen">
 
     {% if user.is_authenticated %}
     {% with current=request.resolver_match.url_name %}
-    <!-- ================= HEADER ================= -->
+
     <header
         class="sticky top-0 z-30 bg-navy text-cream border-b-[3px] border-caramel shadow-[0_6px_20px_rgba(31,48,71,.18)]">
-        <div class="max-w-7xl mx-auto px-4 sm:px-7 h-[72px] flex items-center justify-between lg:justify-start gap-6">
+
+        <div
+            class="max-w-7xl mx-auto px-4 sm:px-7 h-[72px] flex items-center justify-between xl:justify-start gap-3 xl:gap-4">
 
             <!-- Marca -->
             <a href="{% url 'home' %}" class="flex items-center gap-3 shrink-0">
@@ -64,23 +122,30 @@
                     class="w-10 h-10 rounded-[10px] grid place-items-center bg-gradient-to-br from-caramel to-coffee text-cream">
                     {% include 'partials/logo.html' %}
                 </div>
+
                 <div>
-                    <p class="font-serif font-bold text-[19px] text-white leading-tight">Biblio Escolar</p>
-                    <p class="text-[10px] uppercase tracking-[.1em] text-caramel">Sistema de gestión</p>
+                    <p class="font-serif font-bold text-[19px] text-white leading-tight">
+                        Biblio Escolar
+                    </p>
+                    <p class="text-[10px] uppercase tracking-[.1em] text-caramel">
+                        Sistema de gestión
+                    </p>
                 </div>
             </a>
 
-            <!-- Navegación -->
-            <nav id="nav-menu"
-                class="hidden lg:flex lg:flex-1 lg:items-center lg:gap-1 lg:h-full
-                        max-lg:absolute max-lg:top-[72px] max-lg:left-0 max-lg:right-0 max-lg:flex-col max-lg:items-stretch
-                        max-lg:bg-navy max-lg:px-3 max-lg:pt-2 max-lg:pb-4 max-lg:border-b-[3px] max-lg:border-caramel max-lg:gap-0.5">
+            <!-- Menú compartido para escritorio y móvil -->
+            <nav id="nav-menu" aria-label="Navegación principal"
+                class="hidden xl:flex xl:flex-1 xl:items-center xl:gap-0 xl:h-full
+                       max-xl:absolute max-xl:top-[72px] max-xl:left-0 max-xl:right-0
+                       max-xl:flex-col max-xl:items-stretch max-xl:bg-navy
+                       max-xl:px-3 max-xl:pt-2 max-xl:pb-4
+                       max-xl:border-b-[3px] max-xl:border-caramel">
 
                 <a href="{% url 'home' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                          {% if current == 'home' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'home' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <path d="M3 11l9-8 9 8" />
                         <path d="M5 10v10h14V10" />
                     </svg>
@@ -88,10 +153,10 @@
                 </a>
 
                 <a href="{% url 'catalogo' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                          {% if current == 'catalogo' or current == 'detalle_libro' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'catalogo' or current == 'detalle_libro' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <path d="M4 4h5v16H4zM10 4h5v16h-5z" />
                         <path d="M17 5l4 1-3.5 14-4-1" />
                     </svg>
@@ -99,14 +164,15 @@
                 </a>
 
                 {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-                <span class="hidden lg:block w-px h-6 bg-white/20 mx-2"></span>
-                <span class="lg:hidden h-px bg-white/15 my-1.5 mx-1"></span>
+
+                <span class="hidden xl:block w-px h-6 bg-white/20 mx-2"></span>
+                <span class="xl:hidden block h-px bg-white/15 my-1.5 mx-1"></span>
 
                 <a href="{% url 'lista_usuarios' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                              {% if current == 'lista_usuarios' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'lista_usuarios' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <circle cx="9" cy="8" r="3.5" />
                         <path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6" />
                         <path d="M17 5a3.5 3.5 0 0 1 0 6M22 20c0-2.5-1.5-4.5-4-5.5" />
@@ -115,75 +181,90 @@
                 </a>
 
                 <a href="{% url 'lista_sugerencias' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                              {% if current == 'lista_sugerencias' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'lista_sugerencias' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <path d="M12 3v18M5 9l7-6 7 6" />
                     </svg>
                     Sugerencias
                 </a>
+
                 {% else %}
+
                 <a href="{% url 'mis_prestamos' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                              {% if current == 'mis_prestamos' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'mis_prestamos' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <rect x="4" y="3" width="16" height="18" rx="2" />
                         <path d="M8 8h8M8 12h8M8 16h5" />
                     </svg>
                     Mis préstamos
                 </a>
-                <a href="{% url 'mis_multas' %}" class="inline-flex items-center gap-2 px-4 py-3 font-semibold transition-colors
-   {% if request.resolver_match.url_name == 'mis_multas' %}
-       text-white
-   {% else %}
-       text-sand hover:text-white
-   {% endif %}">
 
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round">
+                <a href="{% url 'mis_multas' %}"
+                    class="nav-link {% if current == 'mis_multas' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <rect x="5" y="3" width="14" height="18" rx="2" />
                         <path d="M9 8h6M9 12h6M9 16h3" />
                     </svg>
-
                     Mis multas
+                </a>
+
+                <a href="{% url 'mis_notificaciones' %}"
+                    class="nav-link {% if current == 'mis_notificaciones' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                        <path d="M10 21h4" />
+                    </svg>
+                    Notificaciones
                 </a>
 
                 {% if user.tipo_usuario == 'PROFESOR' %}
                 <a href="{% url 'sugerir_adquisicion' %}"
-                    class="relative flex items-center gap-2 px-3 max-lg:h-11 lg:h-full text-sm font-medium whitespace-nowrap transition max-lg:rounded-[10px] hover:bg-white/5
-                              {% if current == 'sugerir_adquisicion' %}text-white opacity-100 max-lg:bg-white/10 lg:after:content-[''] lg:after:absolute lg:after:left-3 lg:after:right-3 lg:after:-bottom-[3px] lg:after:h-[3px] lg:after:bg-white lg:after:rounded-t{% else %}opacity-80 hover:opacity-100{% endif %}">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    class="nav-link {% if current == 'sugerir_adquisicion' %}is-active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                     Sugerir libro
                 </a>
                 {% endif %}
+
                 {% endif %}
             </nav>
 
-            <!-- Perfil -->
+            <!-- Perfil y cierre de sesión -->
             <div class="flex items-center gap-2 shrink-0">
-                <div class="flex items-center gap-2.5 min-w-0 pr-3 mr-1 lg:border-r lg:border-white/20">
+
+                <div class="flex items-center gap-2.5 min-w-0 pr-3 mr-1 xl:border-r xl:border-white/20">
                     <div
                         class="w-[38px] h-[38px] rounded-full grid place-items-center font-bold text-sm bg-steel text-white border-2 border-caramel">
                         {{ user.username|slice:":1"|upper }}
                     </div>
+
                     <div class="hidden sm:block leading-tight">
-                        <p class="text-[13px] font-semibold text-white whitespace-nowrap">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-[10px] uppercase tracking-[.1em] font-bold text-caramel">{{ user.tipo_usuario }}
+                        <p class="text-[13px] font-semibold text-white max-w-[130px] truncate" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="text-[10px] uppercase tracking-[.1em] font-bold text-caramel">
+                            {{ user.get_tipo_usuario_display }}
                         </p>
                     </div>
                 </div>
 
                 <form action="{% url 'logout' %}" method="post" class="inline">
                     {% csrf_token %}
-                    <button type="submit" title="Cerrar sesión"
+                    <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión"
                         class="p-2 rounded-lg text-cream hover:bg-white/10 hover:text-white transition">
-                        <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="1.8"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                             <path d="M16 17l5-5-5-5M21 12H9" />
                         </svg>
@@ -191,27 +272,31 @@
                 </form>
 
                 <button type="button" id="nav-toggle" title="Menú"
-                    class="lg:hidden p-2 rounded-lg text-cream hover:bg-white/10 hover:text-white transition">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    aria-label="Abrir menú" aria-controls="nav-menu" aria-expanded="false"
+                    class="xl:hidden p-2 rounded-lg text-cream hover:bg-white/10 hover:text-white transition">
+                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="1.8"
+                        stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <path d="M3 6h18M3 12h18M3 18h18" />
                     </svg>
                 </button>
+
             </div>
         </div>
     </header>
+
     {% endwith %}
     {% endif %}
 
-    <!-- ================= CONTENIDO ================= -->
     <main>
         {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-7 pt-6 space-y-2">
             {% for message in messages %}
             <div class="px-4 py-3 rounded-xl text-sm font-medium border shadow-soft
-                        {% if message.tags == 'error' %}bg-bad/10 text-bad border-bad/30
-                        {% elif message.tags == 'success' %}bg-ok/10 text-ok border-ok/30
-                        {% elif message.tags == 'warning' %}bg-warn/10 text-warn border-warn/30
+                        {% if 'error' in message.tags %}bg-bad/10 text-bad border-bad/30
+                        {% elif 'success' in message.tags %}bg-ok/10 text-ok border-ok/30
+                        {% elif 'warning' in message.tags %}bg-warn/10 text-warn border-warn/30
                         {% else %}bg-steel/10 text-steel border-steel/30{% endif %}">
                 {{ message }}
             </div>
@@ -226,14 +311,41 @@
     </main>
 
     <script>
-            (function () {
-                var btn = document.getElementById('nav-toggle');
-                var menu = document.getElementById('nav-menu');
-                if (btn && menu) {
-                    btn.addEventListener('click', function () { menu.classList.toggle('hidden'); });
-                }
-            })();
-    </script>
-</body>
+        (function () {
+            const button = document.getElementById('nav-toggle');
+            const menu = document.getElementById('nav-menu');
 
+            if (!button || !menu) {
+                return;
+            }
+
+            function closeMenu() {
+                menu.classList.add('hidden');
+                button.setAttribute('aria-expanded', 'false');
+                button.setAttribute('aria-label', 'Abrir menú');
+            }
+
+            button.addEventListener('click', function () {
+                const isHidden = menu.classList.toggle('hidden');
+
+                button.setAttribute('aria-expanded', String(!isHidden));
+                button.setAttribute(
+                    'aria-label',
+                    isHidden ? 'Abrir menú' : 'Cerrar menú'
+                );
+            });
+
+            menu.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', closeMenu);
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeMenu();
+                }
+            });
+        })();
+    </script>
+
+</body>
 </html>

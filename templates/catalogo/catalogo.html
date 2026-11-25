@@ -215,11 +215,13 @@
                 <p class="text-xs font-semibold text-ok mb-2">
                     Disponible para préstamo
                 </p>
-
-                <a href="{% url 'solicitar_prestamo' libro.id %}"
-                    class="block w-full text-center px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-navy hover:bg-steel text-white shadow-soft transition">
-                    Solicitar préstamo
-                </a>
+                <form method="post" action="{% url 'solicitar_prestamo' libro.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="block w-full text-center px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-navy hover:bg-steel text-white transition">
+                        Solicitar préstamo
+                    </button>
+                </form>
 
                 {% elif libro.permite_reserva %}
                 <p class="text-xs text-muted mb-2">

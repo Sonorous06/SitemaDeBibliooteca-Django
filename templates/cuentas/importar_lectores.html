@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Importar lectores · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Administración de lectores
+    </p>
+
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        Importar lectores por CSV
+    </h1>
+
+    <p class="text-muted mt-3">
+        Crea cuentas de estudiantes y profesores con sus perfiles.
+        Esta opción crea lectores nuevos; no actualiza cuentas existentes.
+    </p>
+
+    <div class="mt-5 bg-paper border border-line rounded-2xl p-5 text-sm text-coffee">
+        <p class="font-semibold">Formato del archivo</p>
+
+        <ul class="list-disc pl-5 mt-3 space-y-2">
+            <li>Codificación UTF-8 y separador coma o punto y coma.</li>
+            <li>Máximo 500 lectores y 1 MB por archivo.</li>
+            <li>Tipo de usuario: ESTUDIANTE o PROFESOR.</li>
+            <li>Para estudiantes: matrícula, clave de carrera y semestre de 1 a 12.</li>
+            <li>Para profesores: número de empleado y nombre exacto del departamento.</li>
+            <li>Las carreras y departamentos deben existir previamente.</li>
+            <li>Deja vacíos los datos del perfil que no corresponda.</li>
+            <li>Cada lector necesita una contraseña válida, que se guarda cifrada mediante el sistema de contraseñas de Django.</li>
+        </ul>
+
+        <p class="mt-4 font-semibold">Encabezado obligatorio:</p>
+
+        <pre class="mt-2 p-3 bg-cream rounded-lg overflow-x-auto text-xs">username,first_name,last_name,email,telefono,tipo_usuario,password,matricula,carrera,semestre,num_empleado,departamento</pre>
+
+        <p class="mt-4">
+            Si hay errores, no se guarda ninguna cuenta del archivo.
+            Corrige los registros indicados y vuelve a seleccionarlo.
+        </p>
+    </div>
+
+    {% if errores %}
+    <div class="mt-5 p-5 rounded-xl bg-bad/10 border border-bad/30 text-bad text-sm" role="alert">
+        <p class="font-semibold mb-3">No se importó ninguna cuenta.</p>
+
+        <ul class="list-disc pl-5 space-y-2">
+            {% for error in errores %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="mt-6 bg-paper border border-line rounded-2xl p-6">
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+
+        <label for="{{ form.archivo.id_for_label }}" class="block font-semibold text-coffee mb-2">
+            {{ form.archivo.label }}
+        </label>
+
+        {{ form.archivo }}
+
+        {% for error in form.archivo.errors %}
+            <p class="text-sm text-bad mt-2">{{ error }}</p>
+        {% endfor %}
+
+        <div class="flex flex-wrap gap-3 mt-6">
+            <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                Importar lectores
+            </button>
+
+            <a href="{% url 'lista_usuarios' %}" class="px-5 py-3 border border-line text-coffee font-semibold rounded-lg">
+                Volver a usuarios
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

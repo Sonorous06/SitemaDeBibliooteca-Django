@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes · Biblio Escolar{% endblock %}
+
+{% block content %}
+<p class="text-sm font-bold uppercase text-caramel">Administración</p>
+
+<h1 class="font-serif text-3xl font-bold text-navy mt-2">
+    Reportes de biblioteca
+</h1>
+
+<p class="text-muted mt-3">
+    Consulta entregas y cobros por período, además de los vencimientos
+    y saldos pendientes actuales.
+</p>
+
+<form method="get" class="mt-6 p-5 bg-paper border border-line rounded-2xl">
+    {% if form.non_field_errors %}
+    <div class="mb-4 text-bad text-sm" role="alert">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block font-semibold text-coffee mb-2">
+                {{ field.label }}
+            </label>
+
+            {{ field }}
+
+            {% for error in field.errors %}
+                <p class="text-sm text-bad mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+            Consultar reportes
+        </button>
+    </div>
+</form>
+
+{% if reportes_validos %}
+<p class="text-sm text-muted mt-5">
+    Período: {{ desde|date:"d/m/Y" }} al {{ hasta|date:"d/m/Y" }}, ambos días incluidos.
+    Las solicitudes que no se entregaron no cuentan como préstamos entregados.
+</p>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-5">
+    <div class="p-5 bg-paper border border-line rounded-2xl">
+        <p class="text-sm text-muted">Préstamos entregados en el período</p>
+        <p class="text-3xl font-bold text-navy mt-2">{{ total_entregados }}</p>
+    </div>
+
+    <div class="p-5 bg-paper border border-line rounded-2xl">
+        <p class="text-sm text-muted">Cobrado en el período</p>
+        <p class="text-3xl font-bold text-ok mt-2">${{ cobrado|floatformat:2 }}</p>
+        <p class="text-xs text-muted mt-2">Pagos registrados: {{ cantidad_pagos }}</p>
+    </div>
+
+    <div class="p-5 bg-paper border border-line rounded-2xl">
+        <p class="text-sm text-muted">Préstamos vencidos actualmente</p>
+        <p class="text-3xl font-bold text-bad mt-2">{{ total_vencidos }}</p>
+    </div>
+
+    <div class="p-5 bg-paper border border-line rounded-2xl">
+        <p class="text-sm text-muted">Multas pendientes actualmente</p>
+        <p class="text-3xl font-bold text-bad mt-2">${{ saldo_pendiente|floatformat:2 }}</p>
+        <p class="text-xs text-muted mt-2">Multas: {{ cantidad_multas_pendientes }}</p>
+    </div>
+</div>
+
+<section class="mt-8">
+    <h2 class="font-serif text-2xl font-bold text-navy">
+        Préstamos entregados en el período
+    </h2>
+
+    <div class="mt-4 bg-paper border border-line rounded-2xl overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-sand text-coffee">
+                <tr>
+                    <th class="px-4 py-3">Préstamo</th>
+                    <th class="px-4 py-3">Lector</th>
+                    <th class="px-4 py-3">Libro y ejemplar</th>
+                    <th class="px-4 py-3">Entrega</th>
+                    <th class="px-4 py-3">Estado actual</th>
+                    <th class="px-4 py-3">Entregado por</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-line">
+                {% for p in pagina_entregados %}
+                <tr>
+                    <td class="px-4 py-3">#{{ p.pk }}</td>
+                    <td class="px-4 py-3">{{ p.usuario.username }}</td>
+                    <td class="px-4 py-3">
+                        <p class="font-semibold text-coffee">{{ p.ejemplar.libro.titulo }}</p>
+                        <p class="text-xs text-muted">{{ p.ejemplar.codigo_inventario }}</p>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">{{ p.fecha_prestamo|date:"d/m/Y H:i" }}</td>
+                    <td class="px-4 py-3">{{ p.get_estado_display }}</td>
+                    <td class="px-4 py-3">{{ p.entregado_por.username|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-muted">
+                        No hubo entregas en este período.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 mt-3 text-sm">
+        {% if pagina_entregados.has_previous %}
+            <a class="text-steel font-semibold" href="?{{ parametros_entregados }}&amp;pagina_entregados={{ pagina_entregados.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span class="text-muted">Página {{ pagina_entregados.number }} de {{ pagina_entregados.paginator.num_pages }}</span>
+
+        {% if pagina_entregados.has_next %}
+            <a class="text-steel font-semibold" href="?{{ parametros_entregados }}&amp;pagina_entregados={{ pagina_entregados.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+    <section class="bg-paper border border-line rounded-2xl p-5">
+        <h2 class="font-serif text-xl font-bold text-navy">
+            Los 10 libros más prestados del período
+        </h2>
+
+        <ul class="mt-4 divide-y divide-line">
+            {% for libro in libros_mas_prestados %}
+            <li class="py-3 flex justify-between gap-4">
+                <span class="text-sm text-coffee">{{ libro.ejemplar__libro__titulo }}</span>
+                <span class="font-bold text-steel">{{ libro.total }}</span>
+            </li>
+            {% empty %}
+                <li class="py-4 text-sm text-muted">No hay préstamos entregados para clasificar.</li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    <section class="bg-paper border border-line rounded-2xl p-5">
+        <h2 class="font-serif text-xl font-bold text-navy">
+            Multas pendientes actuales por motivo
+        </h2>
+
+        <p class="text-xs text-muted mt-2">
+            Incluye todas las fechas. Excluye multas pagadas y condonadas.
+        </p>
+
+        <ul class="mt-4 divide-y divide-line">
+            {% for fila in pendientes_por_motivo %}
+            <li class="py-3 flex justify-between gap-4">
+                <div>
+                    <p class="text-sm text-coffee">{{ fila.nombre }}</p>
+                    <p class="text-xs text-muted">Cantidad: {{ fila.cantidad }}</p>
+                </div>
+                <span class="font-bold text-bad">${{ fila.total|floatformat:2 }}</span>
+            </li>
+            {% empty %}
+                <li class="py-4 text-sm text-muted">No hay multas pendientes.</li>
+            {% endfor %}
+        </ul>
+    </section>
+</div>
+
+<section class="mt-8">
+    <h2 class="font-serif text-2xl font-bold text-navy">
+        Préstamos vencidos actualmente
+    </h2>
+
+    <p class="text-sm text-muted mt-2">
+        Situación al {{ hoy|date:"d/m/Y" }}. Incluye préstamos sin devolver
+        cuya fecha de vencimiento ya pasó, independientemente del período seleccionado.
+    </p>
+
+    <div class="mt-4 bg-paper border border-line rounded-2xl overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-sand text-coffee">
+                <tr>
+                    <th class="px-4 py-3">Préstamo</th>
+                    <th class="px-4 py-3">Lector</th>
+                    <th class="px-4 py-3">Libro y ejemplar</th>
+                    <th class="px-4 py-3">Vencimiento</th>
+                    <th class="px-4 py-3">Días de retraso</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-line">
+                {% for p in pagina_vencidos %}
+                <tr>
+                    <td class="px-4 py-3">#{{ p.pk }}</td>
+                    <td class="px-4 py-3">{{ p.usuario.username }}</td>
+                    <td class="px-4 py-3">
+                        <p class="font-semibold text-coffee">{{ p.ejemplar.libro.titulo }}</p>
+                        <p class="text-xs text-muted">{{ p.ejemplar.codigo_inventario }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-bad">{{ p.fecha_vencimiento|date:"d/m/Y" }}</td>
+                    <td class="px-4 py-3 text-bad">{{ p.dias_retraso }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-muted">
+                        No hay préstamos vencidos actualmente.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 mt-3 text-sm">
+        {% if pagina_vencidos.has_previous %}
+            <a class="text-steel font-semibold" href="?{{ parametros_vencidos }}&amp;pagina_vencidos={{ pagina_vencidos.previous_page_number }}">Anterior</a>
+        {% endif %}
+
+        <span class="text-muted">Página {{ pagina_vencidos.number }} de {{ pagina_vencidos.paginator.num_pages }}</span>
+
+        {% if pagina_vencidos.has_next %}
+            <a class="text-steel font-semibold" href="?{{ parametros_vencidos }}&amp;pagina_vencidos={{ pagina_vencidos.next_page_number }}">Siguiente</a>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<a href="{% url 'home' %}" class="inline-block mt-8 text-steel font-semibold hover:underline">
+    Volver al inicio
+</a>
+{% endblock %}

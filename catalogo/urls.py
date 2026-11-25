@@ -6,7 +6,7 @@ urlpatterns = [
     path('', views.catalogo_view, name='catalogo'), 
     
     # Vista del detalle de un libro (si ya la tienen definida)
-    path('<int:libro_id>', views.catalogo_view, name='detalle_libro'),
+    path('<int:libro_id>', views.detalle_libro_view, name='detalle_libro'),
     
     #rutas de sugerecias
     #formulario para que el profe siguiera un libro

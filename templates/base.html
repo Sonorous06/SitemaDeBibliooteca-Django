@@ -46,60 +46,121 @@
     </script>
 
     <style>
+        .header-inner {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .main-nav {
+            display: none;
+        }
+
         .nav-link {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0 0.65rem;
-            font-size: 0.875rem;
-            font-weight: 500;
+            gap: 8px;
+            padding: 0 10px;
+            min-height: 44px;
+            font-size: 13px;
+            font-weight: 600;
             white-space: nowrap;
-            opacity: 0.8;
-            transition: background-color 0.2s, opacity 0.2s;
+            color: #DDD4C5;
+            border-radius: 8px;
+            transition: background-color .2s, color .2s;
         }
 
         .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            opacity: 1;
+            background-color: rgba(255, 255, 255, .06);
+            color: white;
         }
 
         .nav-link.is-active {
             color: white;
-            opacity: 1;
         }
 
-        .nav-link svg {
-            width: 19px;
-            height: 19px;
+        .nav-icon {
+            width: 18px;
+            height: 18px;
             flex-shrink: 0;
         }
 
-        @media (min-width: 1280px) {
+        .profile-name {
+            display: block;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .menu-toggle {
+            display: inline-flex;
+        }
+
+        @media (min-width: 1400px) {
+            .main-nav {
+                display: flex;
+                flex: 1;
+                align-items: center;
+                height: 100%;
+                min-width: 0;
+            }
+
             .nav-link {
                 height: 100%;
+                border-radius: 0;
             }
 
             .nav-link.is-active::after {
                 content: "";
                 position: absolute;
-                left: 0.65rem;
-                right: 0.65rem;
+                left: 10px;
+                right: 10px;
                 bottom: -3px;
                 height: 3px;
                 background: white;
                 border-radius: 3px 3px 0 0;
             }
+
+            .menu-toggle {
+                display: none;
+            }
         }
 
-        @media (max-width: 1279px) {
-            .nav-link {
-                min-height: 44px;
-                border-radius: 10px;
+        @media (max-width: 1399px) {
+            .main-nav.is-open {
+                display: flex;
+                position: absolute;
+                top: 72px;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                padding: 12px 20px;
+                background: #1F3047;
+                border-bottom: 3px solid #A27B5C;
+                max-height: calc(100dvh - 72px);
+                overflow-y: auto;
             }
 
             .nav-link.is-active {
-                background-color: rgba(255, 255, 255, 0.1);
+                background-color: rgba(255, 255, 255, .1);
+            }
+        }
+
+        @media (max-width: 639px) {
+            .header-inner {
+                padding: 0 16px;
+                gap: 8px;
+            }
+
+            .profile-details {
+                display: none;
             }
         }
     </style>
@@ -107,20 +168,64 @@
 
 <body class="bg-cream text-coffee font-sans antialiased min-h-screen">
 
+    <!-- Iconos del menú -->
+    <svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+        <symbol id="icon-home" viewBox="0 0 24 24">
+            <path d="M3 11l9-8 9 8" />
+            <path d="M5 10v10h14V10" />
+        </symbol>
+
+        <symbol id="icon-books" viewBox="0 0 24 24">
+            <path d="M4 4h5v16H4zM10 4h5v16h-5z" />
+            <path d="M17 5l4 1-3.5 14-4-1" />
+        </symbol>
+
+        <symbol id="icon-loans" viewBox="0 0 24 24">
+            <rect x="4" y="3" width="16" height="18" rx="2" />
+            <path d="M8 8h8M8 12h8M8 16h5" />
+        </symbol>
+
+        <symbol id="icon-reservations" viewBox="0 0 24 24">
+            <path d="M6 3h12v18l-6-4-6 4z" />
+        </symbol>
+
+        <symbol id="icon-fines" viewBox="0 0 24 24">
+            <rect x="5" y="3" width="14" height="18" rx="2" />
+            <path d="M9 8h6M9 12h6M9 16h3" />
+        </symbol>
+
+        <symbol id="icon-bell" viewBox="0 0 24 24">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+            <path d="M10 21h4" />
+        </symbol>
+
+        <symbol id="icon-users" viewBox="0 0 24 24">
+            <circle cx="9" cy="8" r="3.5" />
+            <path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6" />
+            <path d="M17 5a3.5 3.5 0 0 1 0 6M22 20c0-2.5-1.5-4.5-4-5.5" />
+        </symbol>
+
+        <symbol id="icon-suggestions" viewBox="0 0 24 24">
+            <path d="M12 3v18M5 9l7-6 7 6" />
+        </symbol>
+
+        <symbol id="icon-plus" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14" />
+        </symbol>
+    </svg>
+
     {% if user.is_authenticated %}
     {% with current=request.resolver_match.url_name %}
 
     <header
         class="sticky top-0 z-30 bg-navy text-cream border-b-[3px] border-caramel shadow-[0_6px_20px_rgba(31,48,71,.18)]">
-
-        <div
-            class="max-w-7xl mx-auto px-4 sm:px-7 h-[72px] flex items-center justify-between xl:justify-start gap-3 xl:gap-4">
+        <div class="header-inner">
 
             <!-- Marca -->
             <a href="{% url 'home' %}" class="flex items-center gap-3 shrink-0">
                 <div
                     class="w-10 h-10 rounded-[10px] grid place-items-center bg-gradient-to-br from-caramel to-coffee text-cream">
-                    {% include 'partials/logo.html' %}
+                    {% include "partials/logo.html" %}
                 </div>
 
                 <div>
@@ -133,151 +238,136 @@
                 </div>
             </a>
 
-            <!-- Menú compartido para escritorio y móvil -->
-            <nav id="nav-menu" aria-label="Navegación principal"
-                class="hidden xl:flex xl:flex-1 xl:items-center xl:gap-0 xl:h-full
-                       max-xl:absolute max-xl:top-[72px] max-xl:left-0 max-xl:right-0
-                       max-xl:flex-col max-xl:items-stretch max-xl:bg-navy
-                       max-xl:px-3 max-xl:pt-2 max-xl:pb-4
-                       max-xl:border-b-[3px] max-xl:border-caramel">
+            <!-- Navegación -->
+            <nav id="nav-menu" class="main-nav" aria-label="Navegación principal">
 
-                <a href="{% url 'home' %}"
-                    class="nav-link {% if current == 'home' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M3 11l9-8 9 8" />
-                        <path d="M5 10v10h14V10" />
+                <a href="{% url 'home' %}" class="nav-link {% if current == 'home' %}is-active{% endif %}">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-home"></use>
                     </svg>
-                    Inicio
+                    <span>Inicio</span>
                 </a>
 
                 <a href="{% url 'catalogo' %}"
                     class="nav-link {% if current == 'catalogo' or current == 'detalle_libro' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M4 4h5v16H4zM10 4h5v16h-5z" />
-                        <path d="M17 5l4 1-3.5 14-4-1" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-books"></use>
                     </svg>
-                    Catálogo
+                    <span>Catálogo</span>
                 </a>
 
-                {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-
-                <span class="hidden xl:block w-px h-6 bg-white/20 mx-2"></span>
-                <span class="xl:hidden block h-px bg-white/15 my-1.5 mx-1"></span>
+                {% if user.tipo_usuario == "BIBLIOTECARIO" %}
 
                 <a href="{% url 'lista_usuarios' %}"
                     class="nav-link {% if current == 'lista_usuarios' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <circle cx="9" cy="8" r="3.5" />
-                        <path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6" />
-                        <path d="M17 5a3.5 3.5 0 0 1 0 6M22 20c0-2.5-1.5-4.5-4-5.5" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-users"></use>
                     </svg>
-                    Usuarios
+                    <span>Usuarios</span>
+                </a>
+                <a href="{% url 'reservas_para_entregar' %}"
+                    class="nav-link {% if current == 'reservas_para_entregar' %}is-active{% endif %}">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-reservations"></use>
+                    </svg>
+                    <span>Reservas</span>
                 </a>
 
                 <a href="{% url 'lista_sugerencias' %}"
                     class="nav-link {% if current == 'lista_sugerencias' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M12 3v18M5 9l7-6 7 6" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-suggestions"></use>
                     </svg>
-                    Sugerencias
+                    <span>Sugerencias</span>
                 </a>
 
                 {% else %}
 
                 <a href="{% url 'mis_prestamos' %}"
                     class="nav-link {% if current == 'mis_prestamos' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect x="4" y="3" width="16" height="18" rx="2" />
-                        <path d="M8 8h8M8 12h8M8 16h5" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-loans"></use>
                     </svg>
-                    Mis préstamos
+                    <span>Mis préstamos</span>
                 </a>
 
-                <a href="{% url 'mis_multas' %}"
-                    class="nav-link {% if current == 'mis_multas' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect x="5" y="3" width="14" height="18" rx="2" />
-                        <path d="M9 8h6M9 12h6M9 16h3" />
+                <a href="{% url 'mis_reservas' %}"
+                    class="nav-link {% if current == 'mis_reservas' %}is-active{% endif %}">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-reservations"></use>
                     </svg>
-                    Mis multas
+                    <span>Mis reservas</span>
+                </a>
+
+                <a href="{% url 'mis_multas' %}" class="nav-link {% if current == 'mis_multas' %}is-active{% endif %}">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-fines"></use>
+                    </svg>
+                    <span>Mis multas</span>
                 </a>
 
                 <a href="{% url 'mis_notificaciones' %}"
                     class="nav-link {% if current == 'mis_notificaciones' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-                        <path d="M10 21h4" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-bell"></use>
                     </svg>
-                    Notificaciones
+                    <span>Notificaciones</span>
                 </a>
 
-                {% if user.tipo_usuario == 'PROFESOR' %}
+                {% if user.tipo_usuario == "PROFESOR" %}
                 <a href="{% url 'sugerir_adquisicion' %}"
                     class="nav-link {% if current == 'sugerir_adquisicion' %}is-active{% endif %}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" />
+                    <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <use href="#icon-plus"></use>
                     </svg>
-                    Sugerir libro
+                    <span>Sugerir libro</span>
                 </a>
                 {% endif %}
 
                 {% endif %}
             </nav>
 
-            <!-- Perfil y cierre de sesión -->
+            <!-- Perfil -->
             <div class="flex items-center gap-2 shrink-0">
 
-                <div class="flex items-center gap-2.5 min-w-0 pr-3 mr-1 xl:border-r xl:border-white/20">
+                <div class="flex items-center gap-2.5 pr-3 border-r border-white/20">
                     <div
-                        class="w-[38px] h-[38px] rounded-full grid place-items-center font-bold text-sm bg-steel text-white border-2 border-caramel">
+                        class="w-[38px] h-[38px] rounded-full grid place-items-center font-bold text-sm bg-steel text-white border-2 border-caramel shrink-0">
                         {{ user.username|slice:":1"|upper }}
                     </div>
-
-                    <div class="hidden sm:block leading-tight">
-                        <p class="text-[13px] font-semibold text-white max-w-[130px] truncate" title="{{ user.get_full_name|default:user.username }}">{{ user.get_full_name|default:user.username }}</p>
-                        <p class="text-[10px] uppercase tracking-[.1em] font-bold text-caramel">
-                            {{ user.get_tipo_usuario_display }}
-                        </p>
+                    <div class="profile-details leading-tight">
+                        <p class="profile-name text-[13px] font-semibold text-white">{{ user.username }}</p>
+                        <p class="text-[10px] uppercase tracking-[.1em] font-bold text-caramel">{{user.get_tipo_usuario_display }}</p>
                     </div>
                 </div>
 
                 <form action="{% url 'logout' %}" method="post" class="inline">
                     {% csrf_token %}
                     <button type="submit" title="Cerrar sesión" aria-label="Cerrar sesión"
-                        class="p-2 rounded-lg text-cream hover:bg-white/10 hover:text-white transition">
-                        <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24"
-                            fill="none" stroke="currentColor" stroke-width="1.8"
-                            stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
+                        class="p-2 rounded-lg hover:bg-white/10 text-cream hover:text-white transition">
+                        <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                             <path d="M16 17l5-5-5-5M21 12H9" />
                         </svg>
                     </button>
                 </form>
 
-                <button type="button" id="nav-toggle" title="Menú"
-                    aria-label="Abrir menú" aria-controls="nav-menu" aria-expanded="false"
-                    class="xl:hidden p-2 rounded-lg text-cream hover:bg-white/10 hover:text-white transition">
-                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="1.8"
-                        stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
+                <button type="button" id="nav-toggle" aria-label="Abrir menú" aria-controls="nav-menu"
+                    aria-expanded="false"
+                    class="menu-toggle items-center justify-center p-2 rounded-lg hover:bg-white/10 text-cream hover:text-white transition">
+                    <svg class="w-[19px] h-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M3 6h18M3 12h18M3 18h18" />
                     </svg>
                 </button>
@@ -289,15 +379,13 @@
     {% endwith %}
     {% endif %}
 
+    <!-- Contenido -->
     <main>
         {% if messages %}
         <div class="max-w-7xl mx-auto px-4 sm:px-7 pt-6 space-y-2">
             {% for message in messages %}
-            <div class="px-4 py-3 rounded-xl text-sm font-medium border shadow-soft
-                        {% if 'error' in message.tags %}bg-bad/10 text-bad border-bad/30
-                        {% elif 'success' in message.tags %}bg-ok/10 text-ok border-ok/30
-                        {% elif 'warning' in message.tags %}bg-warn/10 text-warn border-warn/30
-                        {% else %}bg-steel/10 text-steel border-steel/30{% endif %}">
+            <div
+                class="px-4 py-3 rounded-xl text-sm font-medium border shadow-soft {% if 'error' in message.tags %}bg-bad/10 text-bad border-bad/30{% elif 'success' in message.tags %}bg-ok/10 text-ok border-ok/30{% elif 'warning' in message.tags %}bg-warn/10 text-warn border-warn/30{% else %}bg-steel/10 text-steel border-steel/30{% endif %}">
                 {{ message }}
             </div>
             {% endfor %}
@@ -320,18 +408,17 @@
             }
 
             function closeMenu() {
-                menu.classList.add('hidden');
+                menu.classList.remove('is-open');
                 button.setAttribute('aria-expanded', 'false');
                 button.setAttribute('aria-label', 'Abrir menú');
             }
 
             button.addEventListener('click', function () {
-                const isHidden = menu.classList.toggle('hidden');
-
-                button.setAttribute('aria-expanded', String(!isHidden));
+                const open = menu.classList.toggle('is-open');
+                button.setAttribute('aria-expanded', String(open));
                 button.setAttribute(
                     'aria-label',
-                    isHidden ? 'Abrir menú' : 'Cerrar menú'
+                    open ? 'Cerrar menú' : 'Abrir menú'
                 );
             });
 
@@ -344,8 +431,23 @@
                     closeMenu();
                 }
             });
+
+            document.addEventListener('click', function (event) {
+                if (
+                    !menu.contains(event.target) &&
+                    !button.contains(event.target)
+                ) {
+                    closeMenu();
+                }
+            });
+
+            window.matchMedia('(min-width: 1400px)').addEventListener(
+                'change',
+                closeMenu
+            );
         })();
     </script>
 
 </body>
+
 </html>

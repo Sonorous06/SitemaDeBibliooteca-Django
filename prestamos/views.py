@@ -14,44 +14,187 @@ from notificaciones.models import Notificacion
 
 # solicitar prestamo en linea -- cu-06 / cu-23 / rn-01 / rn_08
 @login_required
+@require_POST
 def solicitar_prestamo_view(request, libro_id):
-    """Permite al usuario solicitar un libro disponible desde el catálogo."""
-    libro = get_object_or_404(Libro, pk=libro_id)
-    
-    #valida elegibilidad del usuario (sin multas pendientes ni vencidas)
-    puede_pedir, mensaje_error = request.user.puede_solicitar_prestamos()
-    if not puede_pedir:
-        messages.error(request, mensaje_error)
-        return redirect('catalogo')
-    
-    #busca ejemplar disponible en estante
-    ejemplar = Ejemplar.objects.filter(libro=libro, estado='DISPONIBLE').first()
-    if not ejemplar:
-        messages.warning(request, f"No hay ejemplares disponibles de '{libro.titulo}'.")
-        return redirect('catalogo')
-    
-    politica = PoliticaPrestamo.objects.filter(
-    tipo_usuario=request.user.tipo_usuario
-    ).first()
-    horas_tol = politica.horas_para_recoger if politica else 48
-    fecha_ahora = timezone.now()
-    
-    #TODO: INVESTIGAR PARA QUE SIRVE ESTO
-    with transaction.atomic():
-        prestamo = Prestamo.objects.create(
-            usuario=request.user,
-            ejemplar=ejemplar,
-            fecha_solicitud=fecha_ahora,
-            fecha_limite_recoger=fecha_ahora + timedelta(hours=horas_tol)
+    """Crea una solicitud validando al lector y bloqueando el ejemplar."""
+    from django.db.models import Q
+
+    if request.user.tipo_usuario not in ("ESTUDIANTE", "PROFESOR"):
+        messages.error(
+            request,
+            "Solo estudiantes y profesores pueden solicitar préstamos.",
         )
-        ejemplar.estado = 'RESERVADO'
-        ejemplar.save()
-        
+        return redirect("catalogo")
+
+    with transaction.atomic():
+        usuario = Usuario.objects.select_for_update().get(
+            pk=request.user.pk,
+        )
+
+        libro = get_object_or_404(
+            Libro.objects.select_for_update(),
+            pk=libro_id,
+            activo=True,
+        )
+
+        if not usuario.is_active or usuario.bloqueado:
+            messages.error(
+                request,
+                "Tu cuenta está inactiva o bloqueada.",
+            )
+            return redirect("catalogo")
+
+        if usuario.tiene_multas_pendientes():
+            messages.error(
+                request,
+                "No puedes solicitar préstamos con multas pendientes.",
+            )
+            return redirect("catalogo")
+
+        ahora = timezone.now()
+        hoy = timezone.localdate(ahora)
+
+        tiene_vencidos = Prestamo.objects.filter(
+            usuario=usuario,
+        ).filter(
+            Q(estado="VENCIDO")
+            | Q(
+                estado="ACTIVO",
+                fecha_vencimiento__lt=hoy,
+            )
+        ).exists()
+
+        if tiene_vencidos:
+            messages.error(
+                request,
+                "Tienes préstamos vencidos pendientes de devolución.",
+            )
+            return redirect("catalogo")
+
+        politica = PoliticaPrestamo.objects.filter(
+            tipo_usuario=usuario.tipo_usuario,
+        ).first()
+
+        max_libros = (
+            politica.max_libros
+            if politica
+            else (3 if usuario.tipo_usuario == "ESTUDIANTE" else 10)
+        )
+
+        horas = politica.horas_para_recoger if politica else 48
+
+        if max_libros <= 0 or horas <= 0:
+            messages.error(
+                request,
+                "La política de préstamos no permite esta solicitud. "
+                "Consulta al bibliotecario.",
+            )
+            return redirect("catalogo")
+
+        cantidad = Prestamo.objects.filter(
+            usuario=usuario,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).count()
+
+        if cantidad >= max_libros:
+            messages.error(
+                request,
+                f"Alcanzaste el límite de {max_libros} libros.",
+            )
+            return redirect("catalogo")
+
+        if Prestamo.objects.filter(
+            usuario=usuario,
+            ejemplar__libro=libro,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).exists():
+            messages.error(
+                request,
+                "Ya tienes una solicitud o préstamo vigente de este título.",
+            )
+            return redirect("catalogo")
+
+        if Reserva.objects.filter(
+            usuario=usuario,
+            libro=libro,
+            estado__in=["PENDIENTE", "DISPONIBLE"],
+        ).exists():
+            messages.info(
+                request,
+                "Ya tienes una reserva vigente de este título. "
+                "Consulta Mis reservas.",
+            )
+            return redirect("mis_reservas")
+
+        if Reserva.objects.filter(
+            libro=libro,
+            estado="PENDIENTE",
+        ).exists():
+            messages.warning(
+                request,
+                "Este título tiene lectores en espera. "
+                "Primero debe atenderse la cola de reservas.",
+            )
+            return redirect("catalogo")
+
+        ejemplar = (
+            Ejemplar.objects.select_for_update()
+            .filter(
+                libro=libro,
+                estado="DISPONIBLE",
+            )
+            .order_by("pk")
+            .first()
+        )
+
+        if ejemplar is None:
+            messages.warning(
+                request,
+                f"No hay ejemplares disponibles de '{libro.titulo}'.",
+            )
+            return redirect("catalogo")
+
+        # Comprobar también las asignaciones, por si el estado del
+        # ejemplar no coincide con los registros existentes.
+        tiene_prestamo = Prestamo.objects.filter(
+            ejemplar=ejemplar,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).exists()
+
+        tiene_reserva = Reserva.objects.filter(
+            ejemplar_asignado=ejemplar,
+            estado="DISPONIBLE",
+        ).exists()
+
+        if tiene_prestamo or tiene_reserva:
+            messages.error(
+                request,
+                "El ejemplar tiene una asignación vigente. "
+                "Solicita al bibliotecario que revise su registro.",
+            )
+            return redirect("catalogo")
+
+        prestamo = Prestamo.objects.create(
+            usuario=usuario,
+            ejemplar=ejemplar,
+            estado="SOLICITADO",
+            fecha_solicitud=ahora,
+            fecha_limite_recoger=ahora + timedelta(hours=horas),
+        )
+
+        ejemplar.estado = "RESERVADO"
+        ejemplar.save(update_fields=["estado"])
+
+    limite_local = timezone.localtime(prestamo.fecha_limite_recoger)
+
     messages.success(
         request,
-        f"Solicitud # {prestamo.id} registrada. Tienes hasta {prestamo.fecha_limite_recoger.strftime('%d/%m/%Y %H:%M')} para recogerlo en mostrador."
+        f"Solicitud #{prestamo.pk} registrada. "
+        f"Tienes hasta {limite_local:%d/%m/%Y %H:%M} "
+        "para recogerlo en mostrador.",
     )
-    return redirect('mis_prestamos')
+
+    return redirect("mis_prestamos")
 
 #entregar en mostrador cu-24 --> solo bibliotecario
 @login_required

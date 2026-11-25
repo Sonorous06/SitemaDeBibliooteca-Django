@@ -837,3 +837,231 @@ def renovar_prestamo_view(request, prestamo_id):
         f"Nuevo vencimiento: {prestamo.fecha_vencimiento:%d/%m/%Y}.",
     )
     return redirect("mis_prestamos")
+@login_required
+def registrar_incidencia_view(request, prestamo_id):
+    from decimal import Decimal
+
+    from django.db import transaction
+    from django.shortcuts import get_object_or_404, redirect, render
+    from django.utils import timezone
+
+    from catalogo.models import Ejemplar
+    from cuentas.models import Usuario
+    from multas.models import Multa
+    from prestamos.models import PoliticaPrestamo, Prestamo
+
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        messages.error(request, "Acceso exclusivo para el bibliotecario.")
+        return redirect("home")
+
+    if request.method not in ("GET", "POST"):
+        from django.http import HttpResponseNotAllowed
+
+        return HttpResponseNotAllowed(["GET", "POST"])
+
+    prestamo = get_object_or_404(
+        Prestamo.objects.select_related(
+            "usuario",
+            "ejemplar__libro",
+        ),
+        pk=prestamo_id,
+    )
+
+    if prestamo.estado not in ("ACTIVO", "VENCIDO"):
+        messages.error(request, "Este préstamo ya no admite incidencias.")
+        return redirect("devoluciones_pendientes")
+
+    context = {
+        "prestamo": prestamo,
+        "tipo_seleccionado": "",
+        "descripcion": "",
+    }
+
+    if request.method == "GET":
+        return render(
+            request,
+            "prestamos/registrar_incidencia.html",
+            context,
+        )
+
+    tipo = request.POST.get("tipo", "").strip()
+    descripcion = request.POST.get("descripcion", "").strip()
+
+    context["tipo_seleccionado"] = tipo
+    context["descripcion"] = descripcion
+
+    if tipo not in ("DANIO", "PERDIDA"):
+        messages.error(request, "Selecciona daño o pérdida.")
+        return render(
+            request,
+            "prestamos/registrar_incidencia.html",
+            context,
+        )
+
+    if not descripcion or len(descripcion) > 200:
+        messages.error(
+            request,
+            "Escribe una descripción de entre 1 y 200 caracteres.",
+        )
+        return render(
+            request,
+            "prestamos/registrar_incidencia.html",
+            context,
+        )
+
+    with transaction.atomic():
+        # Mantener el mismo orden de bloqueo que las otras operaciones.
+        usuario = Usuario.objects.select_for_update().get(
+            pk=prestamo.usuario_id,
+        )
+
+        prestamo = Prestamo.objects.select_for_update().get(
+            pk=prestamo.pk,
+        )
+
+        ejemplar = Ejemplar.objects.select_for_update().get(
+            pk=prestamo.ejemplar_id,
+        )
+
+        # Bloquear el libro para leer su costo actual.
+        from catalogo.models import Libro
+
+        libro = Libro.objects.select_for_update().get(
+            pk=ejemplar.libro_id,
+        )
+
+        # Volver a validar después de obtener los bloqueos.
+        if prestamo.estado not in ("ACTIVO", "VENCIDO"):
+            messages.error(
+                request,
+                "El préstamo ya fue procesado. Actualiza la página.",
+            )
+            return redirect("devoluciones_pendientes")
+
+        if ejemplar.estado != "PRESTADO":
+            messages.error(
+                request,
+                "El ejemplar no figura como prestado. Revisa su registro.",
+            )
+            return redirect("devoluciones_pendientes")
+
+        if not prestamo.fecha_vencimiento:
+            messages.error(
+                request,
+                "El préstamo no tiene una fecha de vencimiento registrada.",
+            )
+            return redirect("devoluciones_pendientes")
+
+        costo = libro.costo_reposicion
+
+        if costo is None or costo <= Decimal("0.00"):
+            messages.error(
+                request,
+                "Registra un costo de reposición mayor que cero "
+                "en el libro antes de continuar.",
+            )
+            return redirect("devoluciones_pendientes")
+
+        if Multa.objects.filter(
+            prestamo=prestamo,
+            motivo__in=["DANIO", "PERDIDA"],
+        ).exists():
+            messages.error(
+                request,
+                "Este préstamo ya tiene una multa por daño o pérdida.",
+            )
+            return redirect("devoluciones_pendientes")
+
+        ahora = timezone.now()
+        hoy = timezone.localdate(ahora)
+
+        dias_retraso = max(
+            (hoy - prestamo.fecha_vencimiento).days,
+            0,
+        )
+
+        politica = PoliticaPrestamo.objects.filter(
+            tipo_usuario=usuario.tipo_usuario,
+        ).first()
+
+        tarifa = (
+            politica.multa_por_dia
+            if politica
+            else Decimal("10.00")
+        )
+        limite = (
+            politica.multa_maxima
+            if politica
+            else Decimal("300.00")
+        )
+
+        monto_retraso = min(
+            Decimal(dias_retraso) * tarifa,
+            limite,
+        )
+
+        if monto_retraso > 0:
+            Multa.objects.get_or_create(
+                prestamo=prestamo,
+                motivo="RETRASO",
+                defaults={
+                    "usuario": usuario,
+                    "dias_retraso": dias_retraso,
+                    "monto": monto_retraso,
+                    "estado": "PENDIENTE",
+                },
+            )
+
+        multa = Multa.objects.create(
+            prestamo=prestamo,
+            usuario=usuario,
+            motivo=tipo,
+            dias_retraso=0,
+            monto=costo,
+            estado="PENDIENTE",
+        )
+
+        etiqueta = "Daño" if tipo == "DANIO" else "Pérdida"
+
+        prestamo.observaciones = (
+            f"{etiqueta} registrada por usuario "
+            f"#{request.user.pk}: {descripcion}"
+        )[:255]
+
+        if tipo == "DANIO":
+            prestamo.estado = "DEVUELTO"
+            prestamo.fecha_devolucion = ahora
+            prestamo.recibido_por = request.user
+            ejemplar.estado = "EN_REPARACION"
+        else:
+            prestamo.estado = "PERDIDO"
+            # No hubo devolución física del ejemplar.
+            prestamo.fecha_devolucion = None
+            prestamo.recibido_por = None
+            ejemplar.estado = "PERDIDO"
+
+        prestamo.save(
+            update_fields=[
+                "estado",
+                "fecha_devolucion",
+                "recibido_por",
+                "observaciones",
+            ],
+        )
+
+        ejemplar.save(update_fields=["estado"])
+
+    messages.success(
+        request,
+        f"{etiqueta} registrada para el préstamo #{prestamo.pk}. "
+        f"Multa #{multa.pk} por reposición: ${costo:.2f}.",
+    )
+
+    if monto_retraso > 0:
+        messages.info(
+            request,
+            f"El préstamo también tiene una multa por retraso "
+            f"de ${monto_retraso:.2f}.",
+        )
+
+    return redirect("devoluciones_pendientes")

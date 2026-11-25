@@ -25,4 +25,6 @@ urlpatterns = [
     path("reservas/<int:reserva_id>/recoger/",views.recoger_reserva_view,name="recoger_reserva",),
 
     path("renovar/<int:prestamo_id>/",views.renovar_prestamo_view,name="renovar_prestamo",),
+
+    path("incidencia/<int:prestamo_id>/",views.registrar_incidencia_view,name="registrar_incidencia",),
 ]

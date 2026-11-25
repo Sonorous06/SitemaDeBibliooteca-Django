@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Daño o pérdida · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Gestión de préstamos
+    </p>
+
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        Registrar daño o pérdida
+    </h1>
+
+    <p class="text-muted mt-3">
+        Verifica los datos antes de confirmar la incidencia.
+    </p>
+
+    <div class="mt-6 bg-paper border border-line rounded-2xl p-6">
+        <h2 class="font-serif text-xl font-bold text-navy">
+            {{ prestamo.ejemplar.libro.titulo }}
+        </h2>
+
+        <div class="mt-4 space-y-2 text-sm text-coffee">
+            <p>Préstamo: #{{ prestamo.id }}</p>
+            <p>Usuario: {{ prestamo.usuario.username }}</p>
+            <p>Ejemplar: {{ prestamo.ejemplar.codigo_inventario }}</p>
+            <p>Vencimiento: {{ prestamo.fecha_vencimiento|date:"d/m/Y" }}</p>
+            <p class="font-semibold">
+                Costo de reposición: ${{ prestamo.ejemplar.libro.costo_reposicion|floatformat:2 }}
+            </p>
+        </div>
+
+        <div class="mt-5 p-4 bg-sand rounded-xl text-sm text-coffee">
+            <p>
+                Por daño, el ejemplar pasa a reparación.
+                Por pérdida, se registra como perdido.
+                En ambos casos se genera una multa por el costo de reposición.
+            </p>
+            <p class="mt-2">
+                Si existe retraso, también se registra la multa correspondiente.
+            </p>
+        </div>
+
+        <form method="post" class="mt-6 space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label for="tipo" class="block font-semibold text-coffee mb-2">
+                    Tipo de incidencia
+                </label>
+
+                <select id="tipo" name="tipo" required class="w-full rounded-lg border border-line bg-cream px-4 py-3 text-coffee">
+                    <option value="">Selecciona una opción</option>
+                    <option value="DANIO" {% if tipo_seleccionado == "DANIO" %}selected{% endif %}>Daño del ejemplar</option>
+                    <option value="PERDIDA" {% if tipo_seleccionado == "PERDIDA" %}selected{% endif %}>Pérdida del ejemplar</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="descripcion" class="block font-semibold text-coffee mb-2">
+                    Descripción
+                </label>
+
+                <textarea id="descripcion" name="descripcion" rows="4" maxlength="200" required class="w-full rounded-lg border border-line bg-cream px-4 py-3 text-coffee" placeholder="Describe el daño o las circunstancias de la pérdida.">{{ descripcion }}</textarea>
+
+                <p class="text-xs text-muted mt-2">
+                    Máximo 200 caracteres.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button type="submit" class="px-5 py-3 bg-bad text-white font-semibold rounded-lg">
+                    Confirmar incidencia y multa
+                </button>
+
+                <a href="{% url 'devoluciones_pendientes' %}" class="px-5 py-3 border border-line text-coffee font-semibold rounded-lg">
+                    Volver
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

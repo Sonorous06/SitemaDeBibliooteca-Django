@@ -124,6 +124,14 @@
 
 {% endif %}
 
+<p class="text-sm text-muted mb-4" aria-live="polite">
+    {% if pagina.paginator.count %}
+    Mostrando {{ pagina.start_index }}–{{ pagina.end_index }}
+    de {{ pagina.paginator.count }} libros.
+    {% else %}
+    0 libros encontrados.
+    {% endif %}
+</p>
 <!-- Libros -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 
@@ -272,5 +280,30 @@
     </div>
     {% endfor %}
 </div>
+{% if pagina.has_other_pages %}
+<nav aria-label="Páginas del catálogo"
+     class="mt-8 flex flex-wrap items-center justify-center gap-3">
 
+    {% if pagina.has_previous %}
+    <a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}pagina={{ pagina.previous_page_number }}"
+       rel="prev"
+       class="px-4 py-2 rounded-lg border border-line text-steel font-semibold hover:bg-sand">
+        Anterior
+    </a>
+    {% endif %}
+
+    <span class="text-sm text-muted" aria-current="page">
+        Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+    </span>
+
+    {% if pagina.has_next %}
+    <a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}pagina={{ pagina.next_page_number }}"
+       rel="next"
+       class="px-4 py-2 rounded-lg border border-line text-steel font-semibold hover:bg-sand">
+        Siguiente
+    </a>
+    {% endif %}
+
+</nav>
+{% endif %}
 {% endblock %}

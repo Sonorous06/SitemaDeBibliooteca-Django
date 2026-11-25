@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Gestionar lector · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Administración de lectores
+    </p>
+
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        {% if editando %}Editar lector{% else %}Crear lector{% endif %}
+    </h1>
+
+    <div class="mt-5 p-4 bg-paper border border-line rounded-xl text-sm text-coffee">
+        <p>
+            Completa los datos de la cuenta y los del perfil correspondiente.
+            Los campos de estudiante se utilizan únicamente para estudiantes;
+            los de profesor, únicamente para profesores.
+        </p>
+
+        {% if editando %}
+        <p class="mt-2">
+            El tipo de lector se conserva. Deja las contraseñas vacías
+            para mantener la actual.
+        </p>
+        {% endif %}
+    </div>
+
+    <form method="post" class="mt-6 bg-paper border border-line rounded-2xl p-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="mb-5 p-4 bg-bad/10 text-bad rounded-xl text-sm" role="alert">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-coffee font-semibold mb-2">
+                    {{ field.label }}
+                    {% if field.field.required %}<span class="text-bad">*</span>{% endif %}
+                </label>
+
+                {{ field }}
+
+                {% if field.help_text %}
+                    <p class="text-xs text-muted mt-2">{{ field.help_text }}</p>
+                {% endif %}
+
+                {% for error in field.errors %}
+                    <p class="text-sm text-bad mt-2" role="alert">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <p class="text-xs text-muted mt-5">
+            Si no aparece una carrera o departamento, debe registrarse
+            primero en el administrador del sistema.
+        </p>
+
+        <div class="flex flex-wrap gap-3 mt-6">
+            <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                Guardar lector
+            </button>
+
+            <a href="{% url 'lista_usuarios' %}" class="px-5 py-3 border border-line text-coffee font-semibold rounded-lg">
+                Volver a usuarios
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

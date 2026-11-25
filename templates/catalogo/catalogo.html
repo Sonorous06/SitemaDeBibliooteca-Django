@@ -96,9 +96,9 @@
             Ver sugerencias
         </a>
 
-        <a href="/admin/catalogo/libro/add/" target="_blank" rel="noopener noreferrer"
+        <a href="{% url 'acervo_lista' %}"
             class="px-4 py-2 rounded-[10px] text-[13px] font-semibold bg-navy hover:bg-steel text-white transition">
-            Agregar nuevo libro
+            Gestionar acervo
         </a>
     </div>
 </div>
@@ -212,7 +212,7 @@
 
                 {% if user.tipo_usuario == "BIBLIOTECARIO" %}
 
-                <a href="/admin/catalogo/libro/{{ libro.id }}/change/" target="_blank" rel="noopener noreferrer"
+                <a href="{% url 'acervo_editar_libro' libro.pk %}"
                     class="block w-full text-center px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-caramel hover:bg-caramel/85 text-white transition">
                     Editar libro
                 </a>

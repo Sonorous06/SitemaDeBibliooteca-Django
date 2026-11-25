@@ -1,0 +1,11 @@
+{% if pagina.has_other_pages %}
+<nav aria-label="Páginas" class="mt-6 flex flex-wrap justify-center items-center gap-4 text-sm">
+    {% if pagina.has_previous %}
+    <a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}pagina={{ pagina.previous_page_number }}" class="px-4 py-2 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Anterior</a>
+    {% endif %}
+    <span class="text-muted" aria-current="page">Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}
+    <a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}pagina={{ pagina.next_page_number }}" class="px-4 py-2 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Siguiente</a>
+    {% endif %}
+</nav>
+{% endif %}

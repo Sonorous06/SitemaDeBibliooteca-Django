@@ -19,30 +19,17 @@ def catalogo_view(request):
         Categoria.objects.order_by("nombre", "pk")
     )
 
-    libros = (
-        Libro.objects.filter(activo=True)
-        .select_related("categoria", "editorial")
-        .prefetch_related("autores")
-    )
+    libros = Libro.objects.filter(activo=True)
 
     if query:
-        autores_coincidentes = LibroAutor.objects.filter(
-            libro_id=OuterRef("pk"),
-        ).filter(
-            Q(autor__nombre__icontains=query)
-            | Q(autor__apellidos__icontains=query)
-        )
-
-        # Buscar autores sin multiplicar las filas del mismo libro.
-        libros = libros.alias(
-            coincide_autor=Exists(autores_coincidentes),
-        ).filter(
+        libros = libros.filter(
             Q(titulo__icontains=query)
             | Q(isbn__icontains=query)
+            | Q(autores__nombre__icontains=query)
+            | Q(autores__apellidos__icontains=query)
             | Q(editorial__nombre__icontains=query)
             | Q(categoria__nombre__icontains=query)
-            | Q(coincide_autor=True)
-        )
+        ).distinct()
 
     if categoria_id:
         categorias_validas = {
@@ -52,31 +39,60 @@ def catalogo_view(request):
         if categoria_id in categorias_validas:
             libros = libros.filter(categoria_id=categoria_id)
         else:
-            # Un filtro inválido no debe provocar un error del servidor.
             libros = libros.none()
 
-    libros = libros.annotate(
-        tiene_disponibles=Exists(
-            Ejemplar.objects.filter(
-                libro_id=OuterRef("pk"),
-                estado="DISPONIBLE",
-            )
-        ),
-        permite_reserva=Exists(
-            Ejemplar.objects.filter(
-                libro_id=OuterRef("pk"),
-                estado__in=[
-                    "PRESTADO",
-                    "RESERVADO",
-                    "EN_REPARACION",
-                ],
-            )
-        ),
-    ).order_by("titulo", "pk")
+    libros = libros.order_by("titulo", "pk")
 
-    pagina = Paginator(libros, 12).get_page(
-        request.GET.get("pagina")
+    # Primero contamos y seleccionamos solo los IDs de esta página.
+    pagina = Paginator(
+        libros.values_list("pk", flat=True),
+        12,
+    ).get_page(request.GET.get("pagina"))
+
+    ids_pagina = list(pagina.object_list)
+
+    # Cargamos las relaciones únicamente de esos libros.
+    libros_pagina = list(
+        Libro.objects.filter(pk__in=ids_pagina)
+        .select_related("categoria", "editorial")
+        .prefetch_related("autores")
     )
+
+    libros_por_id = {
+        libro.pk: libro for libro in libros_pagina
+    }
+
+    estados = (
+        Ejemplar.objects.filter(libro_id__in=ids_pagina)
+        .order_by()
+        .values_list("libro_id", "estado")
+        .distinct()
+    )
+
+    disponibles = set()
+    reservables = set()
+
+    for libro_id, estado in estados:
+        if estado == "DISPONIBLE":
+            disponibles.add(libro_id)
+        elif estado in {
+            "PRESTADO",
+            "RESERVADO",
+            "EN_REPARACION",
+        }:
+            reservables.add(libro_id)
+
+    resultado = []
+
+    for libro_id in ids_pagina:
+        libro = libros_por_id.get(libro_id)
+
+        if libro is not None:
+            libro.tiene_disponibles = libro_id in disponibles
+            libro.permite_reserva = libro_id in reservables
+            resultado.append(libro)
+
+    pagina.object_list = resultado
 
     parametros = request.GET.copy()
     parametros.pop("pagina", None)

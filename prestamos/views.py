@@ -1065,3 +1065,82 @@ def registrar_incidencia_view(request, prestamo_id):
         )
 
     return redirect("devoluciones_pendientes")
+@login_required
+@require_POST
+def cancelar_solicitud_view(request, prestamo_id):
+    from django.contrib.auth import get_user_model
+    from django.db import transaction
+    from django.shortcuts import get_object_or_404, redirect
+    from django.utils import timezone
+
+    from catalogo.models import Ejemplar
+    from prestamos.models import Prestamo
+
+    if request.user.tipo_usuario not in ("ESTUDIANTE", "PROFESOR"):
+        messages.error(request, "Esta opción es exclusiva para lectores.")
+        return redirect("home")
+
+    # Solo permite localizar solicitudes del usuario conectado.
+    solicitud = get_object_or_404(
+        Prestamo,
+        pk=prestamo_id,
+        usuario=request.user,
+    )
+
+    Usuario = get_user_model()
+
+    with transaction.atomic():
+        # Mismo orden de bloqueo que entrega y devolución.
+        Usuario.objects.select_for_update().get(pk=request.user.pk)
+
+        solicitud = get_object_or_404(
+            Prestamo.objects.select_for_update(),
+            pk=solicitud.pk,
+            usuario=request.user,
+        )
+
+        ejemplar = Ejemplar.objects.select_for_update().get(
+            pk=solicitud.ejemplar_id,
+        )
+
+        if solicitud.estado != "SOLICITADO":
+            messages.error(
+                request,
+                "Solo puedes cancelar solicitudes pendientes de recoger.",
+            )
+            return redirect("mis_prestamos")
+
+        if ejemplar.estado != "RESERVADO":
+            messages.error(
+                request,
+                "El estado del ejemplar no coincide con la solicitud. "
+                "Solicita al bibliotecario que revise el registro.",
+            )
+            return redirect("mis_prestamos")
+
+        ahora = timezone.now()
+
+        expirada = (
+            solicitud.fecha_limite_recoger is not None
+            and solicitud.fecha_limite_recoger <= ahora
+        )
+
+        solicitud.estado = "EXPIRADO" if expirada else "CANCELADO"
+        solicitud.save(update_fields=["estado"])
+
+        # Conserva la solicitud en el historial y atiende la cola de reservas.
+        asignar_reserva_o_liberar(ejemplar, ahora)
+
+    if expirada:
+        messages.warning(
+            request,
+            f"La solicitud #{solicitud.pk} ya había superado "
+            "su plazo de recogida y quedó expirada.",
+        )
+    else:
+        messages.success(
+            request,
+            f"Solicitud #{solicitud.pk} cancelada correctamente.",
+        )
+
+    return redirect("mis_prestamos")

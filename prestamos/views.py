@@ -1361,3 +1361,103 @@ def prestamo_mostrador_view(request):
         "prestamos/prestamo_mostrador.html",
         {"form": form},
     )
+@login_required
+def politicas_prestamo_view(request):
+    from decimal import Decimal
+
+    from django.db import transaction
+    from django.http import HttpResponseNotAllowed
+
+    from prestamos.forms_politicas import PoliticaPrestamoForm
+    from prestamos.models import PoliticaPrestamo
+
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        messages.error(request, "Acceso exclusivo para el bibliotecario.")
+        return redirect("home")
+
+    if request.method not in ("GET", "POST"):
+        return HttpResponseNotAllowed(["GET", "POST"])
+
+    valores_base = {
+        "ESTUDIANTE": {
+            "dias_prestamos": 7,
+            "max_libros": 3,
+            "max_renovaciones": 1,
+            "multa_por_dia": Decimal("10.00"),
+            "multa_maxima": Decimal("300.00"),
+            "horas_para_recoger": 48,
+        },
+        "PROFESOR": {
+            "dias_prestamos": 30,
+            "max_libros": 10,
+            "max_renovaciones": 2,
+            "multa_por_dia": Decimal("10.00"),
+            "multa_maxima": Decimal("300.00"),
+            "horas_para_recoger": 48,
+        },
+    }
+
+    existentes = {
+        politica.tipo_usuario: politica
+        for politica in PoliticaPrestamo.objects.filter(
+            tipo_usuario__in=valores_base,
+        )
+    }
+
+    formularios = []
+
+    for tipo, valores in valores_base.items():
+        instancia = existentes.get(tipo)
+
+        if instancia is None:
+            # Mostrar valores iniciales sin escribir en la base de datos.
+            instancia = PoliticaPrestamo(
+                tipo_usuario=tipo,
+                **valores,
+            )
+
+        form = PoliticaPrestamoForm(
+            data=request.POST if request.method == "POST" else None,
+            instance=instancia,
+            prefix=tipo.lower(),
+        )
+
+        formularios.append(
+            {
+                "tipo": tipo,
+                "nombre": (
+                    "Estudiantes" if tipo == "ESTUDIANTE" else "Profesores"
+                ),
+                "form": form,
+            }
+        )
+
+    if request.method == "POST":
+        # Validar ambos formularios para mostrar todos los errores.
+        resultados = [
+            bloque["form"].is_valid()
+            for bloque in formularios
+        ]
+
+        if all(resultados):
+            with transaction.atomic():
+                for bloque in formularios:
+                    PoliticaPrestamo.objects.update_or_create(
+                        tipo_usuario=bloque["tipo"],
+                        defaults={
+                            campo: bloque["form"].cleaned_data[campo]
+                            for campo in PoliticaPrestamoForm.Meta.fields
+                        },
+                    )
+
+            messages.success(
+                request,
+                "Las políticas de préstamo se guardaron correctamente.",
+            )
+            return redirect("politicas_prestamo")
+
+    return render(
+        request,
+        "prestamos/politicas_prestamo.html",
+        {"formularios": formularios},
+    )

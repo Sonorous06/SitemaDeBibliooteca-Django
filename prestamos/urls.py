@@ -31,4 +31,6 @@ urlpatterns = [
     path("solicitudes/<int:prestamo_id>/cancelar/", views.cancelar_solicitud_view, name="cancelar_solicitud",),
 
     path("mostrador/", views.prestamo_mostrador_view, name="prestamo_mostrador",),
+
+    path("politicas/",views.politicas_prestamo_view, name="politicas_prestamo",),
 ]

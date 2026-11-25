@@ -1144,3 +1144,220 @@ def cancelar_solicitud_view(request, prestamo_id):
         )
 
     return redirect("mis_prestamos")
+@login_required
+def prestamo_mostrador_view(request):
+    from datetime import timedelta
+
+    from django.contrib.auth import get_user_model
+    from django.core.exceptions import ValidationError
+    from django.db import transaction
+    from django.db.models import Q
+    from django.http import HttpResponseNotAllowed
+    from django.utils import timezone
+
+    from catalogo.models import Ejemplar, Libro
+    from prestamos.forms_mostrador import PrestamoMostradorForm
+    from prestamos.models import PoliticaPrestamo, Prestamo, Reserva
+
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        messages.error(request, "Acceso exclusivo para el bibliotecario.")
+        return redirect("home")
+
+    if request.method not in ("GET", "POST"):
+        return HttpResponseNotAllowed(["GET", "POST"])
+
+    form = PrestamoMostradorForm(
+        request.POST if request.method == "POST" else None
+    )
+
+    if request.method == "POST" and form.is_valid():
+        Usuario = get_user_model()
+
+        try:
+            with transaction.atomic():
+                usuario = (
+                    Usuario.objects.select_for_update()
+                    .filter(username=form.cleaned_data["usuario"])
+                    .first()
+                )
+
+                if usuario is None:
+                    raise ValidationError(
+                        "No existe un lector con ese nombre de usuario."
+                    )
+
+                if usuario.tipo_usuario not in ("ESTUDIANTE", "PROFESOR"):
+                    raise ValidationError(
+                        "Solo estudiantes y profesores pueden recibir préstamos."
+                    )
+
+                if not usuario.is_active or usuario.bloqueado:
+                    raise ValidationError(
+                        "La cuenta del lector está inactiva o bloqueada."
+                    )
+
+                if usuario.tiene_multas_pendientes():
+                    raise ValidationError(
+                        "El lector tiene multas pendientes."
+                    )
+
+                ahora = timezone.now()
+                hoy = timezone.localdate(ahora)
+
+                tiene_vencidos = Prestamo.objects.filter(
+                    usuario=usuario,
+                ).filter(
+                    Q(estado="VENCIDO")
+                    | Q(
+                        estado="ACTIVO",
+                        fecha_vencimiento__lt=hoy,
+                    )
+                ).exists()
+
+                if tiene_vencidos:
+                    raise ValidationError(
+                        "El lector tiene préstamos vencidos."
+                    )
+
+                politica = PoliticaPrestamo.objects.filter(
+                    tipo_usuario=usuario.tipo_usuario,
+                ).first()
+
+                if politica:
+                    dias = politica.dias_prestamos
+                    max_libros = politica.max_libros
+                elif usuario.tipo_usuario == "PROFESOR":
+                    dias = 30
+                    max_libros = 10
+                else:
+                    dias = 7
+                    max_libros = 3
+
+                if dias <= 0 or max_libros <= 0:
+                    raise ValidationError(
+                        "La política de préstamos no permite esta entrega. "
+                        "Revisa su configuración."
+                    )
+
+                cantidad = Prestamo.objects.filter(
+                    usuario=usuario,
+                    estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+                ).count()
+
+                if cantidad >= max_libros:
+                    raise ValidationError(
+                        f"El lector alcanzó su límite de {max_libros} libros."
+                    )
+
+                referencia = Ejemplar.objects.filter(
+                    codigo_inventario=form.cleaned_data["codigo_inventario"],
+                ).values("pk", "libro_id").first()
+
+                if referencia is None:
+                    raise ValidationError(
+                        "No existe un ejemplar con ese código."
+                    )
+
+                libro = Libro.objects.select_for_update().get(
+                    pk=referencia["libro_id"],
+                )
+
+                ejemplar = (
+                    Ejemplar.objects.select_for_update()
+                    .filter(pk=referencia["pk"])
+                    .first()
+                )
+
+                if ejemplar is None or ejemplar.libro_id != libro.pk:
+                    raise ValidationError(
+                        "El ejemplar cambió durante la operación. "
+                        "Vuelve a intentarlo."
+                    )
+
+                if not libro.activo:
+                    raise ValidationError(
+                        "El libro no está activo en el catálogo."
+                    )
+
+                if ejemplar.estado != "DISPONIBLE":
+                    raise ValidationError(
+                        "El ejemplar no está disponible para préstamo directo."
+                    )
+
+                if Prestamo.objects.filter(
+                    usuario=usuario,
+                    ejemplar__libro=libro,
+                    estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+                ).exists():
+                    raise ValidationError(
+                        "El lector ya tiene un préstamo o solicitud "
+                        "vigente de este título."
+                    )
+
+                if Prestamo.objects.filter(
+                    ejemplar=ejemplar,
+                    estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+                ).exists():
+                    raise ValidationError(
+                        "Este ejemplar ya está asociado a otro préstamo vigente."
+                    )
+
+                if Reserva.objects.filter(
+                    ejemplar_asignado=ejemplar,
+                    estado="DISPONIBLE",
+                ).exists():
+                    raise ValidationError(
+                        "Este ejemplar está asignado a una reserva. "
+                        "Registra su entrega desde Reservas."
+                    )
+
+                if Reserva.objects.filter(
+                    usuario=usuario,
+                    libro=libro,
+                    estado="DISPONIBLE",
+                ).exists():
+                    raise ValidationError(
+                        "El lector ya tiene una reserva disponible de este "
+                        "título. Atiéndela desde Reservas."
+                    )
+
+                if Reserva.objects.filter(
+                    libro=libro,
+                    estado="PENDIENTE",
+                ).exists():
+                    raise ValidationError(
+                        "Este título tiene una lista de espera. "
+                        "Primero debe atenderse la cola de reservas."
+                    )
+
+                prestamo = Prestamo.objects.create(
+                    usuario=usuario,
+                    ejemplar=ejemplar,
+                    estado="ACTIVO",
+                    fecha_solicitud=ahora,
+                    fecha_prestamo=ahora,
+                    fecha_vencimiento=hoy + timedelta(days=dias),
+                    entregado_por=request.user,
+                    observaciones="Préstamo directo en mostrador.",
+                )
+
+                ejemplar.estado = "PRESTADO"
+                ejemplar.save(update_fields=["estado"])
+
+        except ValidationError as error:
+            form.add_error(None, error)
+
+        else:
+            messages.success(
+                request,
+                f"Préstamo #{prestamo.pk} entregado a {usuario.username}. "
+                f"Ejemplar: {ejemplar.codigo_inventario}. "
+                f"Vencimiento: {prestamo.fecha_vencimiento:%d/%m/%Y}.",
+            )
+            return redirect("prestamo_mostrador")
+
+    return render(
+        request,
+        "prestamos/prestamo_mostrador.html",
+        {"form": form},
+    )

@@ -29,4 +29,6 @@ urlpatterns = [
     path("incidencia/<int:prestamo_id>/",views.registrar_incidencia_view,name="registrar_incidencia",),
 
     path("solicitudes/<int:prestamo_id>/cancelar/", views.cancelar_solicitud_view, name="cancelar_solicitud",),
+
+    path("mostrador/", views.prestamo_mostrador_view, name="prestamo_mostrador",),
 ]

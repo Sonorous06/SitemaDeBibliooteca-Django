@@ -13,6 +13,7 @@
 
 <p class="text-muted mt-2.5 max-w-xl">
     Consulta tus solicitudes, préstamos y fechas de vencimiento.
+    Puedes cancelar solicitudes pendientes de recoger.
     Las renovaciones están sujetas a las políticas de la biblioteca.
 </p>
 
@@ -64,9 +65,12 @@
                             <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-steel/15 text-steel whitespace-nowrap">
                                 Por recoger
                             </span>
+
+                            {% if prestamo.fecha_limite_recoger %}
                             <p class="text-[11px] text-muted mt-1 whitespace-nowrap">
                                 Hasta {{ prestamo.fecha_limite_recoger|date:"d/m H:i" }}
                             </p>
+                            {% endif %}
 
                         {% elif prestamo.estado == "ACTIVO" %}
                             <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-ok/15 text-ok whitespace-nowrap">
@@ -94,11 +98,25 @@
                         <form method="post"
                               action="{% url 'renovar_prestamo' prestamo.pk %}">
                             {% csrf_token %}
+
                             <button type="submit"
                                     class="px-4 py-2 rounded-[10px] bg-navy hover:bg-steel text-white text-xs font-semibold transition whitespace-nowrap">
                                 Renovar
                             </button>
                         </form>
+
+                        {% elif prestamo.estado == "SOLICITADO" %}
+                        <form method="post"
+                              action="{% url 'cancelar_solicitud' prestamo.pk %}"
+                              onsubmit="return confirm('¿Quieres cancelar esta solicitud de préstamo?');">
+                            {% csrf_token %}
+
+                            <button type="submit"
+                                    class="px-4 py-2 rounded-[10px] border border-bad/30 text-bad hover:bg-bad/10 text-xs font-semibold transition whitespace-nowrap">
+                                Cancelar solicitud
+                            </button>
+                        </form>
+
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}
@@ -126,5 +144,6 @@
     El nuevo plazo se calcula desde el día en que renuevas.
     Si hay multas, préstamos vencidos, reservas de otros lectores
     o alcanzaste tu límite de renovaciones, se mostrará el motivo del rechazo.
+    Las solicitudes canceladas se conservan en tu historial.
 </p>
 {% endblock %}

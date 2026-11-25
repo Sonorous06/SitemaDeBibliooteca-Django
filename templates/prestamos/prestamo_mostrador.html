@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Préstamo en mostrador · Biblio Escolar{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <p class="text-sm font-bold uppercase text-caramel">
+        Gestión de préstamos
+    </p>
+
+    <h1 class="font-serif text-3xl font-bold text-navy mt-2">
+        Préstamo en mostrador
+    </h1>
+
+    <p class="text-muted mt-3">
+        Registra la entrega de un ejemplar disponible sin una solicitud previa.
+        Verifica el usuario del lector y el código del ejemplar.
+    </p>
+
+    <div class="mt-6 bg-paper border border-line rounded-2xl shadow-soft p-6">
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-4 rounded-xl border border-bad/30 bg-bad/10 text-bad text-sm" role="alert">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block font-semibold text-coffee mb-2">
+                    {{ field.label }}
+                </label>
+
+                {{ field }}
+
+                {% for error in field.errors %}
+                    <p class="text-sm text-bad mt-2">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <div class="p-4 rounded-xl bg-sand text-sm text-coffee">
+                Al confirmar, el préstamo queda activo y el ejemplar se
+                registra como prestado. La fecha de vencimiento se calcula
+                según la política del lector.
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg transition">
+                    Registrar entrega
+                </button>
+
+                <a href="{% url 'home' %}" class="px-5 py-3 border border-line text-coffee font-semibold rounded-lg">
+                    Volver al inicio
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

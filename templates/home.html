@@ -175,4 +175,12 @@
     </a>
 </div>
 {% endif %}
+{% if user.tipo_usuario == "BIBLIOTECARIO" %}
+<div class="mt-4">
+    <a href="{% url 'prestamo_mostrador' %}"
+       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+        Préstamo en mostrador
+    </a>
+</div>
+{% endif %}
 {% endblock %}

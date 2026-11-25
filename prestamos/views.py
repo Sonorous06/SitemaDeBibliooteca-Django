@@ -705,3 +705,135 @@ def recoger_reserva_view(request, reserva_id):
         f"{prestamo.fecha_vencimiento:%d/%m/%Y}.",
     )
     return redirect("reservas_para_entregar")
+@login_required
+@require_POST
+def renovar_prestamo_view(request, prestamo_id):
+    if request.user.tipo_usuario not in ["ESTUDIANTE", "PROFESOR"]:
+        messages.error(request, "Solo los lectores pueden renovar préstamos.")
+        return redirect("home")
+
+    with transaction.atomic():
+        usuario = Usuario.objects.select_for_update().get(
+            pk=request.user.pk
+        )
+
+        prestamo = get_object_or_404(
+            Prestamo.objects.select_for_update(),
+            pk=prestamo_id,
+            usuario=usuario,
+        )
+
+        # Compartimos el bloqueo del libro con la creación de reservas.
+        libro = Libro.objects.select_for_update().get(
+            pk=prestamo.ejemplar.libro_id
+        )
+
+        hoy = timezone.localdate()
+
+        if prestamo.estado != "ACTIVO":
+            messages.error(
+                request,
+                "Solo se pueden renovar préstamos activos.",
+            )
+            return redirect("mis_prestamos")
+
+        if not prestamo.fecha_vencimiento:
+            messages.error(
+                request,
+                "El préstamo no tiene fecha de vencimiento.",
+            )
+            return redirect("mis_prestamos")
+
+        if prestamo.fecha_vencimiento < hoy:
+            messages.error(
+                request,
+                "No puedes renovar un préstamo vencido.",
+            )
+            return redirect("mis_prestamos")
+
+        if usuario.bloqueado:
+            messages.error(
+                request,
+                "Tu cuenta está bloqueada. Consulta al bibliotecario.",
+            )
+            return redirect("mis_prestamos")
+
+        if usuario.tiene_multas_pendientes():
+            messages.error(
+                request,
+                "No puedes renovar mientras tengas multas pendientes.",
+            )
+            return redirect("mis_prestamos")
+
+        if (
+            usuario.tiene_prestamos_vencidos()
+            or Prestamo.objects.filter(
+                usuario=usuario,
+                estado="ACTIVO",
+                fecha_vencimiento__lt=hoy,
+            ).exists()
+        ):
+            messages.error(
+                request,
+                "Tienes préstamos vencidos pendientes de devolución.",
+            )
+            return redirect("mis_prestamos")
+
+        if not libro.activo:
+            messages.error(
+                request,
+                "Este libro está dado de baja y no permite renovaciones.",
+            )
+            return redirect("mis_prestamos")
+
+        politica = PoliticaPrestamo.objects.filter(
+            tipo_usuario=usuario.tipo_usuario
+        ).first()
+
+        es_estudiante = usuario.tipo_usuario == "ESTUDIANTE"
+
+        max_renovaciones = (
+            politica.max_renovaciones
+            if politica
+            else (1 if es_estudiante else 2)
+        )
+
+        dias = (
+            politica.dias_prestamos
+            if politica
+            else (7 if es_estudiante else 30)
+        )
+
+        if prestamo.num_renovaciones >= max_renovaciones:
+            messages.error(
+                request,
+                f"Alcanzaste el límite de "
+                f"{max_renovaciones} renovaciones para este préstamo.",
+            )
+            return redirect("mis_prestamos")
+
+        if Reserva.objects.filter(
+            libro=libro,
+            estado__in=["PENDIENTE", "DISPONIBLE"],
+        ).exclude(usuario=usuario).exists():
+            messages.error(
+                request,
+                "Otro lector tiene una reserva vigente de este título. "
+                "No es posible renovarlo.",
+            )
+            return redirect("mis_prestamos")
+
+        # RN-10: el plazo se cuenta desde el día de la renovación.
+        prestamo.fecha_vencimiento = hoy + timedelta(days=dias)
+        prestamo.num_renovaciones += 1
+        prestamo.save(update_fields=[
+            "fecha_vencimiento",
+            "num_renovaciones",
+        ])
+
+    messages.success(
+        request,
+        f"Préstamo #{prestamo.pk} renovado. "
+        f"Nuevo vencimiento: {prestamo.fecha_vencimiento:%d/%m/%Y}.",
+    )
+    return redirect("mis_prestamos")

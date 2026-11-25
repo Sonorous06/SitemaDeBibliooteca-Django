@@ -23,4 +23,6 @@ urlpatterns = [
     path("reservas/por-entregar/",views.reservas_para_entregar_view,name="reservas_para_entregar",),
 
     path("reservas/<int:reserva_id>/recoger/",views.recoger_reserva_view,name="recoger_reserva",),
+
+    path("renovar/<int:prestamo_id>/",views.renovar_prestamo_view,name="renovar_prestamo",),
 ]

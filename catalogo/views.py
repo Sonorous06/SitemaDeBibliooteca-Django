@@ -6,34 +6,55 @@ from django.db.models import Q, Exists, OuterRef
 from .models import Libro, Categoria, SugerenciaAdquisicion, Ejemplar
 from cuentas.models import Profesor, Departamento
 
-
+from django.core.paginator import Paginator
+from .models import LibroAutor
 # Vista principal del catálogo
 @login_required
 def catalogo_view(request):
-    """Busca libros activos y muestra su disponibilidad."""
-
+    """Busca libros activos y muestra 12 resultados por página."""
     query = request.GET.get("q", "").strip()
-    categoria_id = request.GET.get("categoria", "")
+    categoria_id = request.GET.get("categoria", "").strip()
 
-    # Libros activos
-    libros = Libro.objects.filter(activo=True)
+    categorias = list(
+        Categoria.objects.order_by("nombre", "pk")
+    )
 
-    # Búsqueda por título, ISBN, autor o editorial
+    libros = (
+        Libro.objects.filter(activo=True)
+        .select_related("categoria", "editorial")
+        .prefetch_related("autores")
+    )
+
     if query:
-        libros = libros.filter(
+        autores_coincidentes = LibroAutor.objects.filter(
+            libro_id=OuterRef("pk"),
+        ).filter(
+            Q(autor__nombre__icontains=query)
+            | Q(autor__apellidos__icontains=query)
+        )
+
+        # Buscar autores sin multiplicar las filas del mismo libro.
+        libros = libros.alias(
+            coincide_autor=Exists(autores_coincidentes),
+        ).filter(
             Q(titulo__icontains=query)
             | Q(isbn__icontains=query)
-            | Q(autores__nombre__icontains=query)
-            | Q(autores__apellidos__icontains=query)
             | Q(editorial__nombre__icontains=query)
-        ).distinct()
+            | Q(categoria__nombre__icontains=query)
+            | Q(coincide_autor=True)
+        )
 
     if categoria_id:
-        libros = libros.filter(categoria_id=categoria_id)
+        categorias_validas = {
+            str(categoria.pk) for categoria in categorias
+        }
 
-    categorias = Categoria.objects.all()
+        if categoria_id in categorias_validas:
+            libros = libros.filter(categoria_id=categoria_id)
+        else:
+            # Un filtro inválido no debe provocar un error del servidor.
+            libros = libros.none()
 
-    # Disponibilidad para préstamo o reserva
     libros = libros.annotate(
         tiene_disponibles=Exists(
             Ejemplar.objects.filter(
@@ -51,18 +72,27 @@ def catalogo_view(request):
                 ],
             )
         ),
+    ).order_by("titulo", "pk")
+
+    pagina = Paginator(libros, 12).get_page(
+        request.GET.get("pagina")
     )
 
-    context = {
-        "libros": libros,
-        "categorias": categorias,
-        "query": query,
-        "categoria_id": categoria_id,
-    }
+    parametros = request.GET.copy()
+    parametros.pop("pagina", None)
 
-    return render(request, "catalogo/catalogo.html", context)
-
-
+    return render(
+        request,
+        "catalogo/catalogo.html",
+        {
+            "libros": pagina,
+            "pagina": pagina,
+            "categorias": categorias,
+            "query": query,
+            "categoria_id": categoria_id,
+            "filtros_url": parametros.urlencode(),
+        },
+    )
 # Sugerencias de adquisición del profesor (CU-16)
 @login_required
 def sugerir_adquisicion_view(request):

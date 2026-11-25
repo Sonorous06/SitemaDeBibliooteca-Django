@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Ejemplares · {{ libro.titulo }}{% endblock %}
+{% block content %}
+<a href="{% url 'acervo_lista' %}" class="text-sm font-semibold text-steel hover:underline">← Volver al acervo</a>
+<div class="mt-5 flex flex-wrap justify-between items-end gap-4">
+    <div><p class="text-xs uppercase tracking-wider font-bold text-caramel">Ejemplares</p><h1 class="font-serif text-3xl font-bold text-navy mt-2">{{ libro.titulo }}</h1><p class="text-muted mt-2">{{ pagina.paginator.count }} ejemplares registrados.</p></div>
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'acervo_editar_libro' libro.pk %}" class="px-4 py-3 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Editar libro</a>
+        <a href="{% url 'acervo_crear_ejemplar' libro.pk %}" class="px-4 py-3 bg-navy hover:bg-steel text-white rounded-lg font-semibold">Agregar ejemplar</a>
+    </div>
+</div>
+<p class="mt-5 text-sm text-muted">Usa «Baja» para retirar una copia del servicio. Los préstamos y reservas se gestionan desde sus pantallas correspondientes.</p>
+<div class="mt-5 overflow-x-auto bg-paper border border-line rounded-xl">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-sand"><tr><th class="px-4 py-3">Código</th><th class="px-4 py-3">Ubicación</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Acciones</th></tr></thead>
+        <tbody class="divide-y divide-line">
+        {% for ejemplar in pagina %}
+        <tr><td class="px-4 py-4 font-mono">{{ ejemplar.codigo_inventario }}</td><td class="px-4 py-4">{{ ejemplar.ubicacion|default:'No registrada' }}</td><td class="px-4 py-4">{{ ejemplar.get_estado_display }}</td><td class="px-4 py-4"><a href="{% url 'acervo_editar_ejemplar' ejemplar.pk %}" class="text-steel font-semibold hover:underline">Editar</a></td></tr>
+        {% empty %}<tr><td colspan="4" class="px-4 py-10 text-center text-muted">Este libro todavía no tiene ejemplares. Agrega su primera copia.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'catalogo/acervo/paginacion.html' %}
+{% endblock %}

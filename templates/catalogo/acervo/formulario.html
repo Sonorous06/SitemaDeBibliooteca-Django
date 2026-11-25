@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} · Biblio Escolar{% endblock %}
+{% block content %}
+{% if tipo %}
+<a href="{% url 'acervo_auxiliares' tipo %}" class="text-sm font-semibold text-steel hover:underline">← Volver al listado</a>
+{% elif libro %}
+<a href="{% url 'acervo_ejemplares' libro.pk %}" class="text-sm font-semibold text-steel hover:underline">← Volver a ejemplares</a>
+{% else %}
+<a href="{% url 'acervo_lista' %}" class="text-sm font-semibold text-steel hover:underline">← Volver al acervo</a>
+{% endif %}
+<h1 class="font-serif text-3xl font-bold text-navy mt-5">{{ titulo }}</h1>
+{% if libro %}<p class="text-muted mt-2">{{ libro.titulo }}</p>{% endif %}
+{% if es_libro %}
+<p class="text-sm text-muted mt-3">Para retirar un título del catálogo, desmarca «Libro activo». Su historial se conserva.</p>
+<div class="mt-4 flex flex-wrap gap-4 text-sm font-semibold text-steel">
+    <a href="{% url 'acervo_auxiliares' 'autores' %}" target="_blank" rel="noopener noreferrer" class="hover:underline">Administrar autores ↗</a>
+    <a href="{% url 'acervo_auxiliares' 'categorias' %}" target="_blank" rel="noopener noreferrer" class="hover:underline">Administrar categorías ↗</a>
+    <a href="{% url 'acervo_auxiliares' 'editoriales' %}" target="_blank" rel="noopener noreferrer" class="hover:underline">Administrar editoriales ↗</a>
+</div>
+{% endif %}
+<form method="post" enctype="multipart/form-data" class="mt-6 max-w-3xl bg-paper border border-line rounded-2xl p-5 sm:p-7 space-y-5">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div role="alert" class="text-bad bg-bad/10 rounded-lg p-3">{{ form.non_field_errors }}</div>{% endif %}
+    {% for field in form %}
+    <div>
+        <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-coffee mb-2">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="text-xs text-muted mt-2">{{ field.help_text }}</p>{% endif %}
+        {% if field.errors %}<div role="alert" class="text-sm text-bad mt-2">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="px-6 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">Guardar</button>
+</form>
+{% endblock %}

@@ -18,3 +18,10 @@ urlpatterns = [
     #accion para aprobar o rechazar
     path('sugerencias/<int:sugerencia_id>/<str:nuevo_estado>/', views.cambiar_estado_sugerencia, name='cambiar_estado_sugerencia'),
 ]
+
+# Gestión de acervo desde la aplicación.
+from django.urls import include
+
+urlpatterns += [
+    path("gestion/", include("catalogo.urls_acervo")),
+]

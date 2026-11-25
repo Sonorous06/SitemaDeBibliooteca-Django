@@ -127,9 +127,12 @@
                     Costo de reposición: ${{ libro.costo_reposicion|floatformat:2 }}
                 </p>
 
-                {% if user.is_staff and perms.catalogo.change_libro %}
-                <a href="{% url 'admin:catalogo_libro_change' libro.pk %}" class="inline-block mt-3 px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-                    Editar en administrador
+                {% if user.tipo_usuario == "BIBLIOTECARIO" %}
+                <a href="{% url 'acervo_editar_libro' libro.pk %}" class="inline-block mt-3 px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                    Editar libro
+                </a>
+                <a href="{% url 'acervo_ejemplares' libro.pk %}" class="inline-block mt-3 px-5 py-3 border border-line text-steel font-semibold rounded-lg hover:bg-sand">
+                    Gestionar ejemplares
                 </a>
                 {% endif %}
             {% endif %}

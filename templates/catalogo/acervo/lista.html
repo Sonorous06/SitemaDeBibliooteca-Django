@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Gestión del acervo · Biblio Escolar{% endblock %}
+{% block content %}
+<a href="{% url 'catalogo' %}" class="text-sm font-semibold text-steel hover:underline">← Volver al catálogo</a>
+<div class="mt-4 flex flex-wrap justify-between items-end gap-4">
+    <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-caramel">Bibliotecario</p>
+        <h1 class="font-serif text-3xl font-bold text-navy mt-2">Gestión del acervo</h1>
+        <p class="text-muted mt-2">Administra los títulos y sus ejemplares, incluidos los libros inactivos.</p>
+    </div>
+    <a href="{% url 'acervo_crear_libro' %}" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">Agregar libro</a>
+</div>
+<div class="mt-6 flex flex-wrap gap-3">
+    <a href="{% url 'acervo_auxiliares' 'autores' %}" class="px-4 py-2 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Autores</a>
+    <a href="{% url 'acervo_auxiliares' 'categorias' %}" class="px-4 py-2 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Categorías</a>
+    <a href="{% url 'acervo_auxiliares' 'editoriales' %}" class="px-4 py-2 border border-line rounded-lg text-steel font-semibold hover:bg-sand">Editoriales</a>
+</div>
+<form method="get" class="mt-6 flex flex-col sm:flex-row gap-3 bg-paper p-4 border border-line rounded-xl">
+    <input type="search" name="q" value="{{ query }}" aria-label="Título o ISBN" placeholder="Buscar por título o ISBN" class="flex-1 min-w-0 px-3 py-2 bg-cream border border-line rounded-lg">
+    <select name="estado" aria-label="Estado del libro" class="px-3 py-2 bg-cream border border-line rounded-lg">
+        <option value="">Todos los libros</option>
+        <option value="activo" {% if estado == 'activo' %}selected{% endif %}>Activos</option>
+        <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>Inactivos</option>
+    </select>
+    <button type="submit" class="px-5 py-2 bg-navy text-white rounded-lg font-semibold">Buscar</button>
+</form>
+<p class="text-sm text-muted mt-5">{{ pagina.paginator.count }} libros encontrados.</p>
+<div class="mt-3 overflow-x-auto bg-paper border border-line rounded-xl">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-sand text-coffee"><tr><th class="px-4 py-3">Libro</th><th class="px-4 py-3">Categoría</th><th class="px-4 py-3">Estado</th><th class="px-4 py-3">Ejemplares</th><th class="px-4 py-3">Acciones</th></tr></thead>
+        <tbody class="divide-y divide-line">
+        {% for libro in pagina %}
+        <tr>
+            <td class="px-4 py-4"><p class="font-semibold text-navy">{{ libro.titulo }}</p><p class="font-mono text-xs text-muted mt-1">{{ libro.isbn }}</p></td>
+            <td class="px-4 py-4 text-muted">{{ libro.categoria.nombre }}</td>
+            <td class="px-4 py-4">{% if libro.activo %}<span class="text-ok font-semibold">Activo</span>{% else %}<span class="text-muted">Inactivo</span>{% endif %}</td>
+            <td class="px-4 py-4">{{ libro.total_ejemplares }}</td>
+            <td class="px-4 py-4"><div class="flex flex-wrap gap-3">
+                <a href="{% url 'acervo_editar_libro' libro.pk %}" class="text-steel font-semibold hover:underline">Editar</a>
+                <a href="{% url 'acervo_ejemplares' libro.pk %}" class="text-steel font-semibold hover:underline">Ejemplares</a>
+                <a href="{% url 'detalle_libro' libro.pk %}" class="text-steel font-semibold hover:underline">Ver detalle</a>
+            </div></td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="px-4 py-10 text-center text-muted">No hay libros que coincidan con la búsqueda.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'catalogo/acervo/paginacion.html' %}
+{% endblock %}

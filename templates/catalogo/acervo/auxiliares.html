@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} · Biblio Escolar{% endblock %}
+{% block content %}
+<a href="{% url 'acervo_lista' %}" class="text-sm font-semibold text-steel hover:underline">← Volver al acervo</a>
+<div class="mt-5 flex flex-wrap justify-between items-end gap-4">
+    <h1 class="font-serif text-3xl font-bold text-navy">{{ titulo }}</h1>
+    <a href="{% url 'acervo_crear_auxiliar' tipo %}" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">Agregar registro</a>
+</div>
+<form method="get" class="mt-6 flex gap-3">
+    <input type="search" name="q" value="{{ query }}" aria-label="Buscar por nombre" placeholder="Buscar por nombre" class="flex-1 min-w-0 px-3 py-2 bg-paper border border-line rounded-lg">
+    <button type="submit" class="px-5 py-2 bg-navy text-white font-semibold rounded-lg">Buscar</button>
+</form>
+<p class="mt-4 text-sm text-muted">{{ pagina.paginator.count }} registros encontrados.</p>
+<div class="mt-4 overflow-x-auto bg-paper border border-line rounded-xl">
+    <table class="w-full text-left text-sm">
+        <thead class="bg-sand"><tr><th class="px-4 py-3">Nombre</th><th class="px-4 py-3">Acciones</th></tr></thead>
+        <tbody class="divide-y divide-line">
+        {% for registro in pagina %}
+        <tr><td class="px-4 py-4 text-coffee font-semibold">{{ registro }}</td><td class="px-4 py-4"><div class="flex flex-wrap items-center gap-4">
+            <a href="{% url 'acervo_editar_auxiliar' tipo registro.pk %}" class="text-steel font-semibold hover:underline">Editar</a>
+            <form method="post" action="{% url 'acervo_eliminar_auxiliar' tipo registro.pk %}">
+                {% csrf_token %}<button type="submit" class="text-bad font-semibold hover:underline">Eliminar</button>
+            </form>
+        </div></td></tr>
+        {% empty %}<tr><td colspan="2" class="px-4 py-10 text-center text-muted">No hay registros que coincidan.</td></tr>{% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include 'catalogo/acervo/paginacion.html' %}
+{% endblock %}

@@ -10,6 +10,7 @@ from django.db import transaction
 from .models import Prestamo, PoliticaPrestamo, Reserva
 from catalogo.models import Libro, Ejemplar
 from multas.models import Multa
+from notificaciones.models import Notificacion
 
 # solicitar prestamo en linea -- cu-06 / cu-23 / rn-01 / rn_08
 @login_required
@@ -235,37 +236,8 @@ def devolver_prestamo_view(request, prestamo_id):
             'recibido_por',
         ])
 
-        # Asignamos el ejemplar a la primera reserva pendiente.
-        reserva = Reserva.objects.select_for_update().filter(
-            libro_id=ejemplar.libro_id,
-            estado='PENDIENTE'
-        ).order_by('fecha_reserva', 'pk').first()
-
-        if reserva:
-            politica_reserva = PoliticaPrestamo.objects.filter(
-                tipo_usuario=reserva.usuario.tipo_usuario
-            ).first()
-
-            horas = (
-                politica_reserva.horas_para_recoger
-                if politica_reserva
-                else 48
-            )
-
-            reserva.estado = 'DISPONIBLE'
-            reserva.ejemplar_asignado = ejemplar
-            reserva.fecha_expiracion = ahora + timedelta(hours=horas)
-            reserva.save(update_fields=[
-                'estado',
-                'ejemplar_asignado',
-                'fecha_expiracion',
-            ])
-
-            ejemplar.estado = 'RESERVADO'
-        else:
-            ejemplar.estado = 'DISPONIBLE'
-
-        ejemplar.save(update_fields=['estado'])
+        # Asigna por orden FIFO y genera el aviso al lector.
+        reserva = asignar_reserva_o_liberar(ejemplar, ahora)
 
     if dias_retraso > 0 and monto > 0:
         messages.warning(
@@ -345,3 +317,391 @@ def solicitudes_pendientes_view(request):
             'ahora': timezone.now(),
         }
     )
+@login_required
+@require_POST
+def reservar_libro_view(request, libro_id):
+    if request.user.tipo_usuario not in ["ESTUDIANTE", "PROFESOR"]:
+        messages.error(request, "Solo los lectores pueden reservar libros.")
+        return redirect("catalogo")
+
+    with transaction.atomic():
+        usuario = Usuario.objects.select_for_update().get(
+            pk=request.user.pk
+        )
+
+        libro = get_object_or_404(
+            Libro.objects.select_for_update(),
+            pk=libro_id,
+            activo=True,
+        )
+
+        puede_reservar, motivo = usuario.puede_solicitar_prestamos()
+
+        if not puede_reservar:
+            messages.error(request, motivo)
+            return redirect("catalogo")
+
+        # También comprobamos las fechas, aunque el comando
+        # todavía no haya cambiado el estado a VENCIDO.
+        if Prestamo.objects.filter(
+            usuario=usuario,
+            estado__in=["ACTIVO", "VENCIDO"],
+            fecha_vencimiento__lt=timezone.localdate(),
+        ).exists():
+            messages.error(
+                request,
+                "Tienes préstamos vencidos pendientes de devolución.",
+            )
+            return redirect("catalogo")
+
+        if Prestamo.objects.filter(
+            usuario=usuario,
+            ejemplar__libro=libro,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).exists():
+            messages.error(
+                request,
+                "Ya tienes una solicitud o préstamo vigente de este título.",
+            )
+            return redirect("catalogo")
+
+        if Reserva.objects.filter(
+            usuario=usuario,
+            libro=libro,
+            estado__in=["PENDIENTE", "DISPONIBLE"],
+        ).exists():
+            messages.info(
+                request,
+                "Ya tienes una reserva vigente de este libro.",
+            )
+            return redirect("mis_reservas")
+
+        if Ejemplar.objects.filter(
+            libro=libro,
+            estado="DISPONIBLE",
+        ).exists():
+            messages.info(
+                request,
+                "Hay ejemplares disponibles. Solicita el préstamo "
+                "desde el catálogo.",
+            )
+            return redirect("catalogo")
+
+        # Evitamos una reserva sin posibilidad de ser atendida
+        # cuando todos los ejemplares están retirados.
+        if not Ejemplar.objects.filter(
+            libro=libro,
+            estado__in=["PRESTADO", "RESERVADO", "EN_REPARACION"],
+        ).exists():
+            messages.error(
+                request,
+                "Este título no tiene ejemplares habilitados "
+                "para una reserva.",
+            )
+            return redirect("catalogo")
+
+        reserva = Reserva.objects.create(
+            usuario=usuario,
+            libro=libro,
+            estado="PENDIENTE",
+        )
+
+    messages.success(
+        request,
+        f"Reserva #{reserva.pk} registrada. "
+        "Te avisaremos cuando haya un ejemplar disponible.",
+    )
+    return redirect("mis_reservas")
+
+
+@login_required
+def mis_reservas_view(request):
+    if request.user.tipo_usuario not in ["ESTUDIANTE", "PROFESOR"]:
+        messages.error(request, "Esta sección corresponde a los lectores.")
+        return redirect("home")
+
+    reservas = (
+        Reserva.objects.filter(usuario=request.user)
+        .select_related("libro", "ejemplar_asignado")
+        .order_by("-fecha_reserva", "-pk")
+    )
+
+    return render(
+        request,
+        "prestamos/mis_reservas.html",
+        {"reservas": reservas},
+    )
+def asignar_reserva_o_liberar(ejemplar, ahora):
+    """Se usa dentro de una transacción con el ejemplar bloqueado."""
+
+    # No liberamos un ejemplar que tenga otro préstamo vigente.
+    if Prestamo.objects.filter(
+        ejemplar=ejemplar,
+        estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+    ).exists():
+        return None
+
+    if Reserva.objects.filter(
+        ejemplar_asignado=ejemplar,
+        estado="DISPONIBLE",
+    ).exists():
+        return None
+
+    siguiente = (
+        Reserva.objects.select_for_update()
+        .filter(
+            libro_id=ejemplar.libro_id,
+            estado="PENDIENTE",
+        )
+        .order_by("fecha_reserva", "pk")
+        .first()
+    )
+
+    if siguiente:
+        politica = PoliticaPrestamo.objects.filter(
+            tipo_usuario=siguiente.usuario.tipo_usuario
+        ).first()
+
+        horas = politica.horas_para_recoger if politica else 48
+
+        siguiente.estado = "DISPONIBLE"
+        siguiente.ejemplar_asignado = ejemplar
+        siguiente.fecha_expiracion = ahora + timedelta(hours=horas)
+        siguiente.save(update_fields=[
+            "estado",
+            "ejemplar_asignado",
+            "fecha_expiracion",
+        ])
+
+        ejemplar.estado = "RESERVADO"
+
+        Notificacion.objects.get_or_create(
+            usuario=siguiente.usuario,
+            tipo="RESERVA_DISPONIBLE",
+            mensaje=(
+                f"Reserva #{siguiente.pk}: tu ejemplar "
+                f"{ejemplar.codigo_inventario} está disponible. "
+                f"Tienes {horas} horas para recogerlo."
+            ),
+        )
+    else:
+        ejemplar.estado = "DISPONIBLE"
+
+    ejemplar.save(update_fields=["estado"])
+    return siguiente
+
+
+@login_required
+@require_POST
+def cancelar_reserva_view(request, reserva_id):
+    datos = get_object_or_404(
+        Reserva,
+        pk=reserva_id,
+        usuario=request.user,
+    )
+
+    with transaction.atomic():
+        Usuario.objects.select_for_update().get(pk=request.user.pk)
+
+        ejemplar = None
+        if datos.ejemplar_asignado_id:
+            ejemplar = Ejemplar.objects.select_for_update().get(
+                pk=datos.ejemplar_asignado_id
+            )
+
+        reserva = get_object_or_404(
+            Reserva.objects.select_for_update(),
+            pk=reserva_id,
+            usuario=request.user,
+        )
+
+        if reserva.estado not in ["PENDIENTE", "DISPONIBLE"]:
+            messages.error(
+                request,
+                "Esta reserva ya no se puede cancelar.",
+            )
+            return redirect("mis_reservas")
+
+        if reserva.ejemplar_asignado_id != datos.ejemplar_asignado_id:
+            messages.info(
+                request,
+                "La reserva cambió. Actualiza la página e inténtalo otra vez.",
+            )
+            return redirect("mis_reservas")
+
+        estaba_disponible = reserva.estado == "DISPONIBLE"
+
+        reserva.estado = "CANCELADA"
+        reserva.save(update_fields=["estado"])
+
+        if estaba_disponible and ejemplar:
+            if ejemplar.estado == "RESERVADO":
+                asignar_reserva_o_liberar(ejemplar, timezone.now())
+
+    messages.success(request, f"Reserva #{reserva.pk} cancelada.")
+    return redirect("mis_reservas")
+
+
+@login_required
+def reservas_para_entregar_view(request):
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        messages.error(request, "Acceso exclusivo para el bibliotecario.")
+        return redirect("home")
+
+    reservas = (
+        Reserva.objects.filter(estado="DISPONIBLE")
+        .select_related("usuario", "libro", "ejemplar_asignado")
+        .order_by("fecha_expiracion", "pk")
+    )
+
+    return render(
+        request,
+        "prestamos/reservas_para_entregar.html",
+        {"reservas": reservas},
+    )
+
+
+@login_required
+@require_POST
+def recoger_reserva_view(request, reserva_id):
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        messages.error(request, "Acceso no autorizado.")
+        return redirect("home")
+
+    datos = get_object_or_404(Reserva, pk=reserva_id)
+
+    with transaction.atomic():
+        usuario = Usuario.objects.select_for_update().get(
+            pk=datos.usuario_id
+        )
+
+        ejemplar = None
+        if datos.ejemplar_asignado_id:
+            ejemplar = Ejemplar.objects.select_for_update().get(
+                pk=datos.ejemplar_asignado_id
+            )
+
+        reserva = Reserva.objects.select_for_update().get(pk=reserva_id)
+        ahora = timezone.now()
+        hoy = timezone.localdate(ahora)
+
+        if reserva.estado != "DISPONIBLE":
+            messages.error(request, "La reserva ya no está disponible.")
+            return redirect("reservas_para_entregar")
+
+        if (
+            not ejemplar
+            or reserva.ejemplar_asignado_id != ejemplar.pk
+            or ejemplar.libro_id != reserva.libro_id
+            or ejemplar.estado != "RESERVADO"
+        ):
+            messages.error(
+                request,
+                "El ejemplar asignado no coincide con la reserva.",
+            )
+            return redirect("reservas_para_entregar")
+
+        if not reserva.fecha_expiracion:
+            messages.error(request, "La reserva no tiene plazo de recogida.")
+            return redirect("reservas_para_entregar")
+
+        if reserva.fecha_expiracion <= ahora:
+            reserva.estado = "EXPIRADA"
+            reserva.save(update_fields=["estado"])
+            asignar_reserva_o_liberar(ejemplar, ahora)
+
+            messages.warning(request, "El plazo de recogida ya terminó.")
+            return redirect("reservas_para_entregar")
+
+        if usuario.tipo_usuario not in ["ESTUDIANTE", "PROFESOR"]:
+            messages.error(request, "La cuenta no corresponde a un lector.")
+            return redirect("reservas_para_entregar")
+
+        puede_pedir, motivo = usuario.puede_solicitar_prestamos()
+        if not puede_pedir:
+            messages.error(request, motivo)
+            return redirect("reservas_para_entregar")
+
+        if Prestamo.objects.filter(
+            usuario=usuario,
+            estado__in=["ACTIVO", "VENCIDO"],
+            fecha_vencimiento__lt=hoy,
+        ).exists():
+            messages.error(request, "El lector tiene préstamos vencidos.")
+            return redirect("reservas_para_entregar")
+
+        if not reserva.libro.activo:
+            messages.error(request, "El libro está dado de baja.")
+            return redirect("reservas_para_entregar")
+
+        if Prestamo.objects.filter(
+            usuario=usuario,
+            ejemplar__libro_id=reserva.libro_id,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).exists():
+            messages.error(
+                request,
+                "El lector ya tiene una solicitud o préstamo de este título.",
+            )
+            return redirect("reservas_para_entregar")
+
+        if Prestamo.objects.filter(
+            ejemplar=ejemplar,
+            estado__in=["SOLICITADO", "ACTIVO", "VENCIDO"],
+        ).exists():
+            messages.error(request, "El ejemplar ya tiene un préstamo vigente.")
+            return redirect("reservas_para_entregar")
+
+        if Reserva.objects.filter(
+            ejemplar_asignado=ejemplar,
+            estado="DISPONIBLE",
+        ).exclude(pk=reserva.pk).exists():
+            messages.error(
+                request,
+                "El ejemplar también aparece asignado a otra reserva.",
+            )
+            return redirect("reservas_para_entregar")
+
+        politica = PoliticaPrestamo.objects.filter(
+            tipo_usuario=usuario.tipo_usuario
+        ).first()
+
+        es_estudiante = usuario.tipo_usuario == "ESTUDIANTE"
+        dias = politica.dias_prestamos if politica else (
+            7 if es_estudiante else 30
+        )
+        limite = politica.max_libros if politica else (
+            3 if es_estudiante else 10
+        )
+
+        if usuario.total_prestamos_activos() >= limite:
+            messages.error(
+                request,
+                f"El lector alcanzó el límite de {limite} libros.",
+            )
+            return redirect("reservas_para_entregar")
+
+        prestamo = Prestamo.objects.create(
+            usuario=usuario,
+            ejemplar=ejemplar,
+            estado="ACTIVO",
+            fecha_solicitud=reserva.fecha_reserva,
+            fecha_prestamo=ahora,
+            fecha_vencimiento=hoy + timedelta(days=dias),
+            entregado_por=request.user,
+            observaciones=f"Recogida de reserva #{reserva.pk}.",
+        )
+
+        reserva.estado = "ATENDIDA"
+        reserva.save(update_fields=["estado"])
+
+        ejemplar.estado = "PRESTADO"
+        ejemplar.save(update_fields=["estado"])
+
+    messages.success(
+        request,
+        f"Reserva #{reserva.pk} entregada. "
+        f"Préstamo #{prestamo.pk} activo hasta "
+        f"{prestamo.fecha_vencimiento:%d/%m/%Y}.",
+    )
+    return redirect("reservas_para_entregar")

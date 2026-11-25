@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Entrega de reservas · Biblio Escolar{% endblock %}
+
+{% block content %}
+<span class="text-[11px] font-bold uppercase tracking-[.16em] text-caramel">
+    Gestión de reservas
+</span>
+
+<h1 class="font-serif font-bold text-navy text-3xl sm:text-4xl mt-1.5">
+    Reservas por entregar
+</h1>
+
+<p class="text-muted mt-2.5">
+    Verifica la identidad del lector y entrega el ejemplar antes de confirmar.
+</p>
+
+<div class="mt-7 space-y-4">
+    {% for reserva in reservas %}
+    <article class="bg-paper border border-line rounded-2xl shadow-soft p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <p class="text-xs text-muted">
+                    Reserva #{{ reserva.pk }}
+                </p>
+
+                <h2 class="font-serif font-bold text-navy text-xl mt-1">
+                    {{ reserva.libro.titulo }}
+                </h2>
+
+                <p class="text-sm mt-2">
+                    Lector: {{ reserva.usuario.username }}
+                </p>
+
+                <p class="text-sm">
+                    Ejemplar:
+                    {{ reserva.ejemplar_asignado.codigo_inventario|default:"Sin asignar" }}
+                </p>
+
+                <p class="text-sm text-muted mt-2">
+                    Límite de recogida:
+                    {{ reserva.fecha_expiracion|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+
+            <form method="post"
+                  action="{% url 'recoger_reserva' reserva.pk %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="px-5 py-3 rounded-[10px] bg-navy hover:bg-steel text-white text-sm font-semibold transition">
+                    Confirmar recogida
+                </button>
+            </form>
+        </div>
+    </article>
+
+    {% empty %}
+    <div class="bg-paper border border-line rounded-2xl p-8 text-center text-muted">
+        No hay reservas disponibles pendientes de entrega.
+    </div>
+    {% endfor %}
+</div>
+
+<a href="{% url 'home' %}"
+   class="inline-block mt-6 text-sm font-semibold text-steel hover:underline">
+    Volver al inicio →
+</a>
+{% endblock %}

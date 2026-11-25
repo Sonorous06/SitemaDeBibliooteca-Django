@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Mis reservas · Biblio Escolar{% endblock %}
+
+{% block content %}
+<span class="text-[11px] font-bold uppercase tracking-[.16em] text-caramel">
+    Mi historial
+</span>
+
+<h1 class="font-serif font-bold text-navy text-3xl sm:text-4xl mt-1.5">
+    Mis reservas
+</h1>
+
+<p class="text-muted mt-2.5 max-w-xl">
+    Consulta tus reservas y los ejemplares disponibles para recoger.
+    Las reservas pendientes se atienden en orden de llegada.
+</p>
+
+<div class="mt-7 space-y-4">
+    {% for reserva in reservas %}
+    <article class="bg-paper border border-line rounded-2xl shadow-soft p-5">
+        <div class="flex flex-col sm:flex-row sm:justify-between gap-3">
+            <div>
+                <p class="text-xs text-muted mb-1">
+                    Reserva #{{ reserva.pk }}
+                </p>
+
+                <h2 class="font-serif font-bold text-navy text-xl">
+                    {{ reserva.libro.titulo }}
+                </h2>
+
+                <p class="text-xs text-muted mt-2">
+                    Solicitada el
+                    {{ reserva.fecha_reserva|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+
+            <div>
+                <span class="inline-block rounded-full px-3 py-1 text-xs font-semibold
+                    {% if reserva.estado == 'DISPONIBLE' %}bg-ok/10 text-ok
+                    {% elif reserva.estado == 'PENDIENTE' %}bg-steel/10 text-steel
+                    {% else %}bg-sand text-muted{% endif %}">
+                    {{ reserva.get_estado_display }}
+                </span>
+            </div>
+        </div>
+
+        {% if reserva.estado == "PENDIENTE" %}
+        <p class="mt-4 text-sm text-muted">
+            Estás en la lista de espera. Te notificaremos
+            cuando se asigne un ejemplar.
+        </p>
+
+        {% elif reserva.estado == "DISPONIBLE" %}
+        <div class="mt-4 rounded-xl border border-ok/30 bg-ok/10 p-4">
+            <p class="text-sm font-semibold text-ok">
+                Tu ejemplar está apartado.
+            </p>
+
+            <p class="text-sm mt-1">
+                Código:
+                {{ reserva.ejemplar_asignado.codigo_inventario|default:"Por confirmar" }}
+            </p>
+
+            {% if reserva.fecha_expiracion %}
+            <p class="text-sm mt-1">
+                Recógelo antes del
+                {{ reserva.fecha_expiracion|date:"d/m/Y H:i" }}.
+            </p>
+            {% endif %}
+
+            <p class="text-xs text-muted mt-2">
+                Acude con el bibliotecario para registrar la entrega.
+            </p>
+        </div>
+        {% endif %}
+        {% if reserva.estado == "PENDIENTE" or reserva.estado == "DISPONIBLE" %}
+        <form method="post" action="{% url 'cancelar_reserva' reserva.pk %}" class="mt-4">
+            {% csrf_token %}
+            <button type="submit"
+                class="px-4 py-2 rounded-[10px] border border-bad/30 text-bad text-sm font-semibold hover:bg-bad/10 transition">
+                Cancelar reserva
+            </button>
+        </form>
+        {% endif %}
+    </article>
+
+    {% empty %}
+    <div class="bg-paper border border-line rounded-2xl shadow-soft p-8 text-center">
+        <h2 class="font-serif font-bold text-navy text-xl">
+            Todavía no tienes reservas
+        </h2>
+        <p class="text-sm text-muted mt-2">
+            Puedes reservar desde el catálogo cuando un libro
+            no tenga ejemplares disponibles.
+        </p>
+    </div>
+    {% endfor %}
+</div>
+
+<a href="{% url 'catalogo' %}" class="inline-block mt-6 text-sm font-semibold text-steel hover:underline">
+    Volver al catálogo →
+</a>
+{% endblock %}

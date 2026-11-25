@@ -13,4 +13,14 @@ urlpatterns = [
     path('solicitudes/',views.solicitudes_pendientes_view, name='solicitudes_pendientes',),
     
     path('devoluciones/',views.devoluciones_pendientes_view, name='devoluciones_pendientes',),
+
+    path("reservar/<int:libro_id>/", views.reservar_libro_view, name="reservar_libro",),
+
+    path("mis-reservas/", views.mis_reservas_view, name="mis_reservas",),
+
+    path("reservas/<int:reserva_id>/cancelar/",views.cancelar_reserva_view,name="cancelar_reserva",),
+
+    path("reservas/por-entregar/",views.reservas_para_entregar_view,name="reservas_para_entregar",),
+
+    path("reservas/<int:reserva_id>/recoger/",views.recoger_reserva_view,name="recoger_reserva",),
 ]

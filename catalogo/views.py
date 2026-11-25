@@ -163,3 +163,61 @@ def cambiar_estado_sugerencia(request, sugerencia_id, nuevo_estado):
         )
 
     return redirect("lista_sugerencias")
+@login_required
+def detalle_libro_view(request, libro_id):
+    from django.core.paginator import Paginator
+    from .models import LibroAutor
+
+    # El detalle solo consulta información.
+    if request.method != "GET":
+        from django.http import HttpResponseNotAllowed
+
+        return HttpResponseNotAllowed(["GET"])
+
+    libros = Libro.objects.select_related(
+        "categoria",
+        "editorial",
+    )
+
+    # Los lectores solo pueden consultar libros activos.
+    if request.user.tipo_usuario != "BIBLIOTECARIO":
+        libros = libros.filter(activo=True)
+
+    libro = get_object_or_404(libros, pk=libro_id)
+
+    autorias = (
+        LibroAutor.objects.filter(libro=libro)
+        .select_related("autor")
+        .order_by("orden", "pk")
+    )
+
+    ejemplares = libro.ejemplares.order_by("codigo_inventario", "pk")
+
+    disponibles = ejemplares.filter(
+        estado="DISPONIBLE",
+    ).count()
+
+    permite_reserva = (
+        libro.activo
+        and disponibles == 0
+        and ejemplares.filter(
+            estado__in=["PRESTADO", "RESERVADO", "EN_REPARACION"],
+        ).exists()
+    )
+
+    pagina = Paginator(ejemplares, 15).get_page(
+        request.GET.get("pagina")
+    )
+
+    return render(
+        request,
+        "catalogo/detalle_libro.html",
+        {
+            "libro": libro,
+            "autorias": autorias,
+            "pagina_ejemplares": pagina,
+            "total_ejemplares": pagina.paginator.count,
+            "disponibles": disponibles,
+            "permite_reserva": permite_reserva,
+        },
+    )

@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}{{ libro.titulo }} · Biblio Escolar{% endblock %}
+
+{% block content %}
+<a href="{% url 'catalogo' %}" class="text-sm font-semibold text-steel hover:underline">
+    ← Volver al catálogo
+</a>
+
+<div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="bg-paper border border-line rounded-2xl overflow-hidden self-start">
+        {% if libro.portada %}
+            <img src="{{ libro.portada.url }}" alt="Portada de {{ libro.titulo }}" class="w-full max-h-[500px] object-contain">
+        {% else %}
+            <div class="min-h-72 bg-navy p-8 flex items-center justify-center">
+                <p class="font-serif text-3xl font-bold text-cream text-center">
+                    {{ libro.titulo }}
+                </p>
+            </div>
+        {% endif %}
+    </div>
+
+    <section class="lg:col-span-2 bg-paper border border-line rounded-2xl p-6">
+        <p class="text-xs font-bold uppercase tracking-wider text-caramel">
+            {{ libro.categoria.nombre }}
+        </p>
+
+        <h1 class="font-serif text-3xl sm:text-4xl font-bold text-navy mt-2">
+            {{ libro.titulo }}
+        </h1>
+
+        {% if libro.subtitulo %}
+            <p class="text-lg text-muted mt-3">{{ libro.subtitulo }}</p>
+        {% endif %}
+
+        <div class="mt-5">
+            <h2 class="font-semibold text-coffee">Autores</h2>
+
+            <ul class="mt-2 text-muted">
+                {% for autoria in autorias %}
+                    <li>{{ autoria.autor.nombre }} {{ autoria.autor.apellidos }}</li>
+                {% empty %}
+                    <li>Sin autores registrados.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-sm">
+            <div>
+                <dt class="text-muted">Editorial</dt>
+                <dd class="font-semibold text-coffee">{{ libro.editorial.nombre }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted">ISBN</dt>
+                <dd class="font-mono text-coffee">{{ libro.isbn }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted">Año de publicación</dt>
+                <dd class="text-coffee">{{ libro.anio_publicacion|default_if_none:"No registrado" }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted">Edición</dt>
+                <dd class="text-coffee">{{ libro.edicion|default:"No registrada" }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted">Idioma</dt>
+                <dd class="text-coffee">{{ libro.idioma }}</dd>
+            </div>
+            <div>
+                <dt class="text-muted">Páginas</dt>
+                <dd class="text-coffee">{{ libro.num_paginas|default_if_none:"No registradas" }}</dd>
+            </div>
+        </dl>
+
+        <div class="mt-6">
+            <h2 class="font-semibold text-coffee">Descripción</h2>
+
+            <div class="mt-2 text-sm text-muted">
+                {% if libro.descripcion %}
+                    {{ libro.descripcion|linebreaks }}
+                {% else %}
+                    <p>Sin descripción registrada.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-6 p-4 bg-cream border border-line rounded-xl">
+            <p class="font-semibold text-coffee">
+                Ejemplares disponibles: {{ disponibles }} de {{ total_ejemplares }}
+            </p>
+
+            {% if not libro.activo %}
+                <p class="text-bad text-sm mt-2">
+                    Libro inactivo. No admite nuevas solicitudes.
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="mt-5">
+            {% if user.tipo_usuario == "ESTUDIANTE" or user.tipo_usuario == "PROFESOR" %}
+                {% if libro.activo %}
+                    {% if disponibles %}
+                    <form method="post" action="{% url 'solicitar_prestamo' libro.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                            Solicitar préstamo
+                        </button>
+                    </form>
+
+                    {% elif permite_reserva %}
+                    <form method="post" action="{% url 'reservar_libro' libro.pk %}">
+                        {% csrf_token %}
+                        <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                            Reservar libro
+                        </button>
+                    </form>
+
+                    {% else %}
+                        <p class="text-sm text-muted">
+                            No hay ejemplares habilitados para préstamo o reserva.
+                        </p>
+                    {% endif %}
+                {% endif %}
+
+            {% elif user.tipo_usuario == "BIBLIOTECARIO" %}
+                <p class="text-sm text-coffee">
+                    Costo de reposición: ${{ libro.costo_reposicion|floatformat:2 }}
+                </p>
+
+                {% if user.is_staff and perms.catalogo.change_libro %}
+                <a href="{% url 'admin:catalogo_libro_change' libro.pk %}" class="inline-block mt-3 px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
+                    Editar en administrador
+                </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </section>
+</div>
+
+<section class="mt-8">
+    <h2 class="font-serif text-2xl font-bold text-navy">
+        Ejemplares del libro
+    </h2>
+
+    <div class="mt-4 bg-paper border border-line rounded-2xl overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-sand text-coffee">
+                <tr>
+                    <th class="px-5 py-4">Código</th>
+                    <th class="px-5 py-4">Ubicación</th>
+                    <th class="px-5 py-4">Estado</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-line">
+                {% for ejemplar in pagina_ejemplares %}
+                <tr>
+                    <td class="px-5 py-4 font-mono">{{ ejemplar.codigo_inventario }}</td>
+                    <td class="px-5 py-4">{{ ejemplar.ubicacion|default:"No registrada" }}</td>
+                    <td class="px-5 py-4">{{ ejemplar.get_estado_display }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="px-5 py-8 text-center text-muted">
+                        No hay ejemplares registrados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="flex flex-wrap gap-4 items-center mt-4 text-sm">
+        {% if pagina_ejemplares.has_previous %}
+            <a href="?pagina={{ pagina_ejemplares.previous_page_number }}" class="text-steel font-semibold">Anterior</a>
+        {% endif %}
+
+        <span class="text-muted">
+            Página {{ pagina_ejemplares.number }} de {{ pagina_ejemplares.paginator.num_pages }}
+        </span>
+
+        {% if pagina_ejemplares.has_next %}
+            <a href="?pagina={{ pagina_ejemplares.next_page_number }}" class="text-steel font-semibold">Siguiente</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

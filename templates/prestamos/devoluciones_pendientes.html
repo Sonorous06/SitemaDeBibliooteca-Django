@@ -83,6 +83,10 @@
                                 Confirmar devolución
                             </button>
                         </form>
+                        <a href="{% url 'registrar_incidencia' p.id %}"
+                           class="inline-block mt-3 text-sm font-semibold text-bad hover:underline">
+                            Registrar daño o pérdida
+                        </a>
                         {% else %}
                             <span class="text-sm text-bad">
                                 Revisar registro

@@ -19,7 +19,7 @@
 
 <!-- Buscador -->
 <form action="{% url 'catalogo' %}" method="get"
-    class="mt-6 bg-paper border border-line rounded-2xl shadow-soft p-3.5 flex flex-col sm:flex-row gap-2.5">
+    class="mt-6 mb-6 bg-paper border border-line rounded-2xl shadow-soft p-3.5 flex flex-col sm:flex-row gap-2.5">
 
     <div
         class="flex-1 flex items-center gap-2.5 px-3.5 bg-cream border border-line rounded-[10px] text-muted focus-within:border-steel focus-within:ring-[3px] focus-within:ring-steel/30">
@@ -60,21 +60,6 @@
         Buscar
     </button>
 </form>
-
-<!-- Categorías -->
-<div class="flex flex-wrap gap-2 mt-5 mb-6">
-    <a href="{% url 'catalogo' %}?q={{ query|urlencode }}"
-        class="px-4 py-1.5 rounded-full text-[13px] border transition {% if not categoria_id %}bg-navy border-navy text-white{% else %}border-line text-muted hover:text-coffee hover:border-caramel{% endif %}">
-        Todos
-    </a>
-
-    {% for cat in categorias %}
-    <a href="{% url 'catalogo' %}?categoria={{ cat.id }}&amp;q={{ query|urlencode }}"
-        class="px-4 py-1.5 rounded-full text-[13px] border transition {% if cat.id|stringformat:'i' == categoria_id %}bg-navy border-navy text-white{% else %}border-line text-muted hover:text-coffee hover:border-caramel{% endif %}">
-        {{ cat.nombre }}
-    </a>
-    {% endfor %}
-</div>
 
 <!-- Herramientas por rol -->
 {% if user.tipo_usuario == "BIBLIOTECARIO" %}

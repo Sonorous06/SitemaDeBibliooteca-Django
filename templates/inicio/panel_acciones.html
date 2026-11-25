@@ -1,0 +1,29 @@
+<section class="mt-8 sm:mt-10" aria-labelledby="operacion-diaria">
+    <div class="mb-5">
+        <h2 id="operacion-diaria" class="font-serif text-2xl font-bold text-navy">Operación diaria</h2>
+        <p class="mt-1 text-sm text-muted">Elige la tarea que necesitas realizar.</p>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {% include 'inicio/tarjeta_accion.html' with destino='solicitudes_pendientes' titulo='Entregar préstamos' descripcion='Entrega los libros solicitados en línea.' icono='entregar' %}
+        {% include 'inicio/tarjeta_accion.html' with destino='prestamo_mostrador' titulo='Préstamo en mostrador' descripcion='Registra un préstamo directamente en biblioteca.' icono='mostrador' %}
+        {% include 'inicio/tarjeta_accion.html' with destino='devoluciones_pendientes' titulo='Registrar devolución' descripcion='Recibe los libros que están prestados.' icono='devolver' %}
+        {% include 'inicio/tarjeta_accion.html' with destino='multas_pendientes' titulo='Gestionar multas' descripcion='Consulta multas, registra pagos o condonaciones.' icono='multas' %}
+    </div>
+</section>
+
+<section class="mt-7" aria-labelledby="administracion-biblioteca">
+    <h2 id="administracion-biblioteca" class="mb-3 text-xs font-bold uppercase tracking-widest text-muted">Administración</h2>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <a href="{% url 'reportes_biblioteca' %}" class="group flex items-center gap-3 rounded-xl border border-line px-4 py-4 transition hover:border-steel hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel">
+            <svg class="h-5 w-5 shrink-0 text-steel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v17h17M9 15v-4m5 4V7m5 8V4" /></svg>
+            <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-navy">Reportes</span><span class="mt-0.5 block text-xs text-muted">Consultas y estadísticas de la biblioteca.</span></span>
+            <span class="text-steel transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+        </a>
+        <a href="{% url 'politicas_prestamo' %}" class="group flex items-center gap-3 rounded-xl border border-line px-4 py-4 transition hover:border-steel hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-steel">
+            <svg class="h-5 w-5 shrink-0 text-steel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="3" /><circle cx="15" cy="17" r="3" /></svg>
+            <span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-navy">Políticas de préstamo</span><span class="mt-0.5 block text-xs text-muted">Plazos, límites de libros y multas.</span></span>
+            <span class="text-steel transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+        </a>
+    </div>
+</section>

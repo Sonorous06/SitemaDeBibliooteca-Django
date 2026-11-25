@@ -5,7 +5,8 @@ from django.db.models import Q, Exists, OuterRef
 
 from .models import Libro, Categoria, SugerenciaAdquisicion, Ejemplar
 from cuentas.models import Profesor, Departamento
-
+from django.db import transaction
+from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from .models import LibroAutor
 # Vista principal del catálogo
@@ -157,30 +158,44 @@ def sugerir_adquisicion_view(request):
 
     return render(request, "catalogo/sugerir_adquisicion.html")
 
-
-# Consulta de sugerencias para el bibliotecario (CU-33)
 @login_required
 def lista_sugerencias_view(request):
-    """Muestra todas las sugerencias al bibliotecario."""
-
+    """Muestra las sugerencias al bibliotecario."""
     if request.user.tipo_usuario != "BIBLIOTECARIO":
-        messages.error(request, "Acceso exclusivo para el bibliotecario.")
+        messages.error(
+            request,
+            "Acceso exclusivo para el bibliotecario.",
+        )
         return redirect("catalogo")
 
-    sugerencias = SugerenciaAdquisicion.objects.all().order_by("-fecha")
+    sugerencias = (
+        SugerenciaAdquisicion.objects
+        .select_related("profesor")
+        .order_by("-fecha", "-pk")
+    )
+
+    pagina = Paginator(sugerencias, 15).get_page(
+        request.GET.get("pagina")
+    )
 
     return render(
         request,
         "catalogo/lista_sugerencias.html",
-        {"sugerencias": sugerencias},
+        {
+            "sugerencias": pagina,
+            "pagina": pagina,
+        },
     )
 
 
-# Aprobar o rechazar una sugerencia
 @login_required
-def cambiar_estado_sugerencia(request, sugerencia_id, nuevo_estado):
-    """Cambia el estado de la sugerencia a APROBADA o RECHAZADA."""
-
+@require_POST
+def cambiar_estado_sugerencia(
+    request,
+    sugerencia_id,
+    nuevo_estado,
+):
+    """Procesa una sugerencia pendiente mediante POST."""
     if request.user.tipo_usuario != "BIBLIOTECARIO":
         messages.error(request, "Acceso no autorizado.")
         return redirect("catalogo")
@@ -189,24 +204,27 @@ def cambiar_estado_sugerencia(request, sugerencia_id, nuevo_estado):
         messages.error(request, "Estado no válido.")
         return redirect("lista_sugerencias")
 
-    sugerencia = get_object_or_404(
-        SugerenciaAdquisicion,
-        id=sugerencia_id,
+    with transaction.atomic():
+        sugerencia = get_object_or_404(
+            SugerenciaAdquisicion.objects.select_for_update(),
+            pk=sugerencia_id,
+        )
+
+        if sugerencia.estado != "PENDIENTE":
+            messages.error(
+                request,
+                "Esta sugerencia ya fue procesada.",
+            )
+            return redirect("lista_sugerencias")
+
+        sugerencia.estado = nuevo_estado
+        sugerencia.save(update_fields=["estado"])
+
+    messages.success(
+        request,
+        f"La sugerencia '{sugerencia.titulo}' "
+        f"ha sido {nuevo_estado}.",
     )
-
-    sugerencia.estado = nuevo_estado
-    sugerencia.save()
-
-    if nuevo_estado == "APROBADA":
-        messages.success(
-            request,
-            f"La sugerencia '{sugerencia.titulo}' ha sido APROBADA.",
-        )
-    else:
-        messages.info(
-            request,
-            f"La sugerencia '{sugerencia.titulo}' ha sido RECHAZADA.",
-        )
 
     return redirect("lista_sugerencias")
 @login_required

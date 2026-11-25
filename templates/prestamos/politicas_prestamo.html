@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Políticas de préstamo · Biblio Escolar{% endblock %}
+
+{% block content %}
+<p class="text-sm font-bold uppercase text-caramel">
+    Administración
+</p>
+
+<h1 class="font-serif text-3xl font-bold text-navy mt-2">
+    Políticas de préstamo
+</h1>
+
+<p class="text-muted mt-3 max-w-3xl">
+    Configura los plazos, límites y multas para cada tipo de lector.
+    Revisa ambas políticas antes de guardar.
+</p>
+
+<div class="mt-5 p-4 rounded-xl border border-line bg-paper text-sm text-coffee">
+    <p>
+        Guardar no modifica las fechas de vencimiento, los plazos de recogida
+        ni los importes de multas que ya están registrados.
+    </p>
+    <p class="mt-2">
+        Los límites se consultan en las siguientes operaciones.
+        La tarifa y el tope vigentes se utilizan cuando se calcula una nueva
+        multa por retraso, incluso para préstamos existentes.
+    </p>
+</div>
+
+<form method="post" class="mt-6">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for bloque in formularios %}
+        <section class="bg-paper border border-line rounded-2xl shadow-soft p-6">
+            <h2 class="font-serif text-2xl font-bold text-navy mb-5">
+                {{ bloque.nombre }}
+            </h2>
+
+            {% if bloque.form.non_field_errors %}
+            <div class="mb-4 p-3 rounded-lg bg-bad/10 text-bad text-sm" role="alert">
+                {% for error in bloque.form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="space-y-5">
+                {% for field in bloque.form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block font-semibold text-coffee mb-2">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.help_text %}
+                        <p class="text-xs text-muted mt-2">{{ field.help_text }}</p>
+                    {% endif %}
+
+                    {% for error in field.errors %}
+                        <p class="text-sm text-bad mt-2" role="alert">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endfor %}
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+        <button type="submit" class="px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg transition">
+            Guardar ambas políticas
+        </button>
+
+        <a href="{% url 'home' %}" class="px-5 py-3 border border-line text-coffee font-semibold rounded-lg">
+            Volver al inicio
+        </a>
+    </div>
+</form>
+{% endblock %}

@@ -23,6 +23,8 @@
 </div>
 
 {% if user.tipo_usuario == 'BIBLIOTECARIO' %}
+{% include 'inicio/panel_acciones.html' %}
+
 <!-- Métricas del bibliotecario -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mt-9">
     <div class="bg-paper border border-line rounded-2xl shadow-soft p-6">
@@ -143,22 +145,8 @@
     </section>
 </div>
 {% endif %}
-{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-<div class="mt-8">
-    <a href="{% url 'solicitudes_pendientes' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Entregar préstamos
-    </a>
-</div>
-{% endif %}
-{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-<div class="mt-4">
-    <a href="{% url 'devoluciones_pendientes' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Registrar devolución
-    </a>
-</div>
-{% endif %}
+
+
 {% if user.tipo_usuario == 'ESTUDIANTE' or user.tipo_usuario == 'PROFESOR' %}
 <div class="mt-6">
     <a href="{% url 'mis_multas' %}"
@@ -167,36 +155,8 @@
     </a>
 </div>
 {% endif %}
-{% if user.tipo_usuario == 'BIBLIOTECARIO' %}
-<div class="mt-4">
-    <a href="{% url 'multas_pendientes' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Gestionar multas
-    </a>
-</div>
-{% endif %}
-{% if user.tipo_usuario == "BIBLIOTECARIO" %}
-<div class="mt-4">
-    <a href="{% url 'prestamo_mostrador' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Préstamo en mostrador
-    </a>
-</div>
-{% endif %}
-{% if user.tipo_usuario == "BIBLIOTECARIO" %}
-<div class="mt-4">
-    <a href="{% url 'politicas_prestamo' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Políticas de préstamo
-    </a>
-</div>
-{% endif %}
-{% if user.tipo_usuario == "BIBLIOTECARIO" %}
-<div class="mt-4">
-    <a href="{% url 'reportes_biblioteca' %}"
-       class="inline-block px-5 py-3 bg-navy hover:bg-steel text-white font-semibold rounded-lg">
-        Reportes de biblioteca
-    </a>
-</div>
-{% endif %}
+
+
+
+
 {% endblock %}
